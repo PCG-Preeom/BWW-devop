@@ -133,8 +133,13 @@ http.createServer(async (req, res) => {
         return;
     }
 
-    if (pathname === '/logout' && req.method === 'POST') {
+    if (pathname === '/logout' && (req.method === 'POST' || req.method === 'GET')) {
         handleLogout(req, res);
+        return;
+    }
+
+    if (pathname === '/sw.js') {
+        send(res, 204, '', { 'Cache-Control': 'no-store' });
         return;
     }
 
