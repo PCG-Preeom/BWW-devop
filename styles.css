@@ -34,6 +34,92 @@ body {
     overflow: hidden;
 }
 
+body.auth-locked #wrap {
+    visibility: hidden;
+}
+
+.login-screen {
+    position: fixed;
+    inset: 0;
+    z-index: 5000;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    background:
+        radial-gradient(circle at 20% 15%, rgba(37, 99, 235, 0.24), transparent 32%),
+        linear-gradient(135deg, #eaf2ff 0%, #f8fbff 46%, #dbeafe 100%);
+}
+
+body.auth-locked .login-screen {
+    display: flex;
+}
+
+.login-screen.server-login {
+    display: flex;
+}
+
+.login-panel {
+    width: min(420px, 100%);
+    padding: 24px;
+    color: var(--text);
+    background: rgba(255, 255, 255, 0.78);
+    border: 1px solid rgba(255, 255, 255, 0.64);
+    border-radius: 14px;
+    box-shadow: var(--shadow);
+    backdrop-filter: blur(18px) saturate(1.15);
+}
+
+.login-panel h1 {
+    margin: 0 0 18px;
+    font-size: 26px;
+    line-height: 1.1;
+}
+
+.remember-option {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 12px 0 0;
+    color: #475569;
+    font-size: 13px;
+    text-transform: none;
+}
+
+.remember-option input {
+    width: 16px;
+    height: 16px;
+    margin: 0;
+    accent-color: var(--blue);
+}
+
+.login-message {
+    min-height: 20px;
+    margin-top: 12px;
+    color: #b91c1c;
+    font-size: 13px;
+    font-weight: 800;
+}
+
+body.dark-mode .login-screen {
+    background:
+        radial-gradient(circle at 20% 15%, rgba(96, 165, 250, 0.22), transparent 32%),
+        linear-gradient(135deg, #07111f 0%, #101827 48%, #0f172a 100%);
+}
+
+body.dark-mode .login-panel {
+    background: rgba(15, 23, 42, 0.86);
+    border-color: rgba(148, 163, 184, 0.24);
+}
+
+body.dark-mode .remember-option {
+    color: #cbd5e1;
+}
+
+body.dark-mode .login-message {
+    color: #fca5a5;
+}
+
 .eyebrow {
     margin: 0 0 4px;
     color: #2563eb;
@@ -113,6 +199,27 @@ body {
     flex: 1;
     min-width: 0;
     background: #dbeafe;
+}
+
+body.dark-mode #map {
+    background: #0f172a;
+}
+
+.map-error {
+    display: grid;
+    place-items: center;
+    height: 100%;
+    padding: 32px;
+    color: #991b1b;
+    background: #fee2e2;
+    font-size: 16px;
+    font-weight: 800;
+    text-align: center;
+}
+
+body.dark-mode .map-error {
+    color: #fecaca;
+    background: #450a0a;
 }
 
 body.presentation-mode #panel {
@@ -256,8 +363,41 @@ label {
     letter-spacing: 0;
 }
 
+.filter-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+    margin: 8px 0 10px;
+}
+
+.filter-option {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-height: 38px;
+    margin: 0;
+    padding: 8px 9px;
+    color: #1e3a8a;
+    background: rgba(255, 255, 255, 0.66);
+    border: 1px solid rgba(148, 163, 184, 0.38);
+    border-radius: 10px;
+    font-size: 12px;
+    font-weight: 800;
+    text-transform: none;
+    cursor: pointer;
+}
+
+.filter-option input {
+    width: 16px;
+    height: 16px;
+    margin: 0;
+    accent-color: var(--blue);
+}
+
 select,
 input[type="text"],
+input[type="password"],
 input[type="number"] {
     width: 100%;
     min-height: 42px;
@@ -276,6 +416,7 @@ select {
 
 select:hover,
 input[type="text"]:hover,
+input[type="password"]:hover,
 input[type="number"]:hover {
     border-color: #94a3b8;
 }

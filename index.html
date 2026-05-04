@@ -3,25 +3,25 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MP + Buffalo Wild Wings Map</title>
+    <title>MP + BWW + Dunkin Map</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://unpkg.com/leaflet-control-geocoder@2.4.0/dist/Control.Geocoder.css">
     <link rel="stylesheet" href="styles.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
-    <script src="https://unpkg.com/leaflet-control-geocoder@2.4.0/dist/Control.Geocoder.js"></script>
 </head>
 <body>
     <main id="wrap">
         <aside id="panel" aria-label="Map tools">
             <section class="side-brand">
                 <p class="eyebrow">Development Territory</p>
-                <h1>MP + Buffalo Wild Wings Map</h1>
+                <h1>MP + BWW + Dunkin Map</h1>
                 <div class="top-legend" aria-label="Map legend summary">
                     <span><i class="fas fa-building" style="color:#2d58cf"></i> MP</span>
                     <span><i class="fas fa-utensils" style="color:#dc2626"></i> PA BWW</span>
                     <span><i class="fas fa-utensils" style="color:#c2410c"></i> NJ BWW</span>
+                    <span><i class="fas fa-mug-hot" style="color:#f97316"></i> Dunkin</span>
+                    <span><i class="fas fa-ice-cream" style="color:#db2777"></i> Dunkin / BR</span>
                     <span><i class="fas fa-star" style="color:#c2410c"></i> GO</span>
                     <span><i class="fas fa-map-pin" style="color:#16a34a"></i> Pinned</span>
                     <span><i class="fas fa-circle" style="color:#1e3a8a"></i> MP radius</span>
@@ -32,11 +32,23 @@
             <section class="row">
                 <div class="section-title"><i class="fas fa-display"></i><b>Presentation</b></div>
                 <button class="secondary" id="presentationToggle" onclick="togglePresentationView()"><i class="fas fa-expand"></i> Presentation View</button>
+                <button class="secondary" id="themeToggle" onclick="toggleDarkMode()"><i class="fas fa-moon"></i> Dark Mode</button>
+                <button class="secondary" onclick="logoutMap()"><i class="fas fa-lock"></i> Log Out</button>
             </section>
 
             <details class="row tool-card" open>
+                <summary class="section-title"><i class="fas fa-filter"></i><b>Visible Locations</b></summary>
+                <div class="filter-grid" aria-label="Location filters">
+                    <label class="filter-option"><input id="filterMP" type="checkbox" checked onchange="applyLocationFilters()"> MP</label>
+                    <label class="filter-option"><input id="filterBWW" type="checkbox" checked onchange="applyLocationFilters()"> BWW</label>
+                    <label class="filter-option"><input id="filterDunkin" type="checkbox" checked onchange="applyLocationFilters()"> Dunkin</label>
+                </div>
+                <div id="filterSummary" class="hint"></div>
+            </details>
+
+            <details class="row tool-card" open>
                 <summary class="section-title"><i class="fas fa-search-location"></i><b>Search Location</b></summary>
-                <label>MP or BWW</label>
+                <label>MP, BWW, or Dunkin</label>
                 <select id="locationSearch"></select>
                 <button class="primary" onclick="jumpToLocation()"><i class="fas fa-location-crosshairs"></i> Jump To Location</button>
             </details>

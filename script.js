@@ -1,77 +1,99 @@
-// Data arrays for locations
-const MP = [
-    {"id": "MP 90574", "lat": 40.2541957149049, "lng": -75.0880001725863, "radiusMiles": 1},
-    {"id": "MP 20723", "lat": 40.0080063085635, "lng": -75.1727176372791, "radiusMiles": 1},
-    {"id": "MP 20724", "lat": 39.9145452021085, "lng": -75.1554917030765, "radiusMiles": 0.5},
-    {"id": "MP 20673", "lat": 39.9951025705013, "lng": -75.0931737784802, "radiusMiles": 1},
-    {"id": "MP 20678", "lat": 40.0740141116265, "lng": -75.1575861121568, "radiusMiles": 1.5},
-    {"id": "MP 90577", "lat": 40.0873896110275, "lng": -74.9608339748005, "radiusMiles": 1},
-    {"id": "MP 91122", "lat": 40.2129635176821, "lng": -75.01195462589, "radiusMiles": 1},
-    {"id": "MP 94750", "lat": 39.9763606531953, "lng": -75.1194692650701, "radiusMiles": 0.5},
-    {"id": "MP 20693", "lat": 39.976494932146,  "lng": -75.1580816265739, "radiusMiles": 0.5},
-    {"id": "MP 90582", "lat": 40.2322636001077, "lng": -74.9407894586644, "radiusMiles": 1},
-    {"id": "MP 21521", "lat": 39.9539052600824, "lng": -75.199227479263, "radiusMiles": 0.5},
-    {"id": "MP 21518", "lat": 39.9379431591009, "lng": -75.1667540382082, "radiusMiles": 0.5},
-    {"id": "MP 21520", "lat": 39.9186826142142, "lng": -75.1849716018374, "radiusMiles": 0.5},
-    {"id": "MP 20674", "lat": 40.0306914380818, "lng": -75.1034135383946, "radiusMiles": 1},
-    {"id": "MP 95024", "lat": 40.2459747070055, "lng": -74.7630541149707, "radiusMiles": 0.75},
-    {"id": "MP 20682", "lat": 40.2110783778632, "lng": -74.7552723000323, "radiusMiles": 1.5},
-    {"id": "MP 20697", "lat": 40.556294071305,  "lng": -75.4896127978639, "radiusMiles": 1},
-    {"id": "MP 90560", "lat": 40.6748387513354, "lng": -75.3460137037353, "radiusMiles": 1},
-    {"id": "MP 21406", "lat": 40.5524942874463, "lng": -75.5923687183309, "radiusMiles": 1},
-    {"id": "MP 90522", "lat": 41.2584381158992, "lng": -75.901857032505, "radiusMiles": 1},
-    {"id": "MP 90566", "lat": 40.2393244476958, "lng": -75.242141743823, "radiusMiles": 1},
-    {"id": "MP 90570", "lat": 40.6788561788995, "lng": -75.1473909672058, "radiusMiles": 1},
-    {"id": "MP 91116", "lat": 40.6443483776485, "lng": -75.3470388503772, "radiusMiles": 1},
-    {"id": "MP 91118", "lat": 40.2647605615097, "lng": -75.3192244305822, "radiusMiles": 1},
-    {"id": "MP 94747", "lat": 40.3177636918695, "lng": -75.3076553069029, "radiusMiles": 1},
-    {"id": "MP 91120", "lat": 40.1165378059024, "lng": -75.2864770740739, "radiusMiles": 1}
-];
+// Location data is loaded from the authenticated backend API.
+let MP = [];
+let BWW_PA = [];
+let BWW_NJ = [];
+let DUNKIN = [];
+let ALL = [];
+let ALL_MP = [];
+let ALL_BWW = [];
+let ALL_DUNKIN = [];
+let ALL_DESTINATIONS = [];
 
-const BWW_PA = [
-    {"name": "Buffalo Wild Wings - Downingtown", "address": "103 Quarry Road, Downingtown, PA 19335", "lat": 40.0066, "lng": -75.6922},
-    {"name": "Buffalo Wild Wings - Easton", "address": "3798 Dryland Way, Easton, PA 18045", "lat": 40.6706, "lng": -75.2867},
-    {"name": "Buffalo Wild Wings - Glen Mills", "address": "920 Baltimore Pike, Glen Mills, PA 19342", "lat": 39.8818, "lng": -75.531},
-    {"name": "Buffalo Wild Wings - King of Prussia", "address": "690 West Dekalb Pike, King of Prussia, PA 19406", "lat": 40.0911, "lng": -75.3872},
-    {"name": "Buffalo Wild Wings - Lancaster", "address": "2065 Fruitville Pike, Lancaster, PA 17601", "lat": 40.073, "lng": -76.3197},
-    {"name": "Buffalo Wild Wings - Langhorne", "address": "2763 East Lincoln Highway, Langhorne, PA 19047", "lat": 40.1836, "lng": -74.8802},
-    {"name": "Buffalo Wild Wings - Philadelphia Roosevelt Blvd.", "address": "9701 Roosevelt Road, Philadelphia, PA 19114", "lat": 40.0813, "lng": -75.0218},
-    {"name": "Buffalo Wild Wings - Phoenixville", "address": "1510 Egypt Road, Phoenixville, PA 19460", "lat": 40.1334, "lng": -75.5329},
-    {"name": "Buffalo Wild Wings - Quakertown", "address": "1465 West Broad Street, Suite 29, Quakertown, PA 18951", "lat": 40.441, "lng": -75.3609},
-    {"name": "Buffalo Wild Wings - Scranton", "address": "100 Viewmont Mall, Suite 614, Scranton, PA 18508", "lat": 41.4596, "lng": -75.6555},
-    {"name": "Buffalo Wild Wings - Warrington", "address": "201 Easton Road #118, Warrington, PA 18976", "lat": 40.2245, "lng": -75.141},
-    {"name": "Buffalo Wild Wings - Whitehall", "address": "1225 Grape Street, Whitehall, PA 18052", "lat": 40.6321, "lng": -75.4877},
-    {"name": "Buffalo Wild Wings - Wilkes-Barre", "address": "319 Bear Creek Blvd, Wilkes-Barre, PA 18702", "lat": 41.2444, "lng": -75.8366}
-];
+const BRAND_FILTERS = {
+    MP: true,
+    BWW: true,
+    Dunkin: true
+};
 
-const BWW_NJ = [
-    {"name": "Buffalo Wild Wings - Princeton, NJ", "address": "Princeton, NJ", "lat": 40.3573, "lng": -74.6672},
-    {"name": "Buffalo Wild Wings GO - Voorhees, NJ - Echelon Village", "address": "1120 White Horse Road, Voorhees, NJ 08043", "lat": 39.8466, "lng": -74.994},
-    {"name": "Buffalo Wild Wings - Watchung, NJ", "address": "1599 US Highway 22 West, Watchung, NJ 07069", "lat": 40.637, "lng": -74.4406},
-    {"name": "Buffalo Wild Wings GO - Sparta, NJ", "address": "4 N Village Blvd STE A, Sparta, NJ", "lat": 41.0334, "lng": -74.6399},
-    {"name": "Buffalo Wild Wings - Flemington, NJ", "address": "144 NJ-31 #100, Flemington, NJ 08822", "lat": 40.521, "lng": -74.8592},
-    {"name": "Buffalo Wild Wings - Moorestown, NJ", "address": "1598 Nixon Dr, Moorestown, NJ 08054", "lat": 39.9444, "lng": -74.963}
-];
+function normalizeLocationData(data) {
+    MP = data.mp || [];
+    BWW_PA = data.bwwPa || [];
+    BWW_NJ = data.bwwNj || [];
+    DUNKIN = data.dunkin || [];
 
-// Combined array of all locations with type and color
-const ALL = [
-    ...MP.map(x => ({ ...x, type: 'MP', color: '#1e3a8a' })),
-    ...BWW_PA.map(x => ({ ...x, type: 'BWW PA', color: '#dc2626' })),
-    ...BWW_NJ.map(x => ({ ...x, type: 'BWW NJ', color: '#c2410c' }))
-];
+    ALL = [
+        ...MP.map(x => ({ ...x, type: 'MP', color: '#1e3a8a' })),
+        ...BWW_PA.map(x => ({ ...x, type: 'BWW PA', color: '#dc2626' })),
+        ...BWW_NJ.map(x => ({ ...x, type: 'BWW NJ', color: '#c2410c' })),
+        ...DUNKIN.map(x => ({ ...x, name: `Dunkin #${x.id}`, type: x.combo ? 'Dunkin / Baskin-Robbins' : 'Dunkin', color: x.combo ? '#db2777' : '#f97316' }))
+    ];
 
-// Separate arrays for MP and BWW selections
-const ALL_MP = ALL.filter(p => p.type === 'MP');
-const ALL_BWW = ALL.filter(p => p.type !== 'MP');
+    ALL_MP = ALL.filter(p => p.type === 'MP');
+    ALL_BWW = ALL.filter(p => p.type.startsWith('BWW'));
+    ALL_DUNKIN = ALL.filter(p => p.type.startsWith('Dunkin'));
+    ALL_DESTINATIONS = ALL.filter(p => p.type !== 'MP');
+}
+
+async function loadLocationData() {
+    const response = await fetch('/api/locations');
+    if (response.status === 401) {
+        window.location.href = '/login';
+        return false;
+    }
+    if (!response.ok) {
+        throw new Error('Unable to load location data.');
+    }
+    normalizeLocationData(await response.json());
+    return true;
+}
+
+async function logoutMap() {
+    await fetch('/logout', { method: 'POST' });
+    window.location.href = '/login';
+}
+
+function brandOf(p) {
+    if (p.type === 'MP') return 'MP';
+    if (p.type.startsWith('BWW')) return 'BWW';
+    if (p.type.startsWith('Dunkin')) return 'Dunkin';
+    return 'Other';
+}
+
+function isVisibleLocation(p) {
+    return BRAND_FILTERS[brandOf(p)] !== false;
+}
+
+function visibleLocations() {
+    return ALL.filter(isVisibleLocation);
+}
+if (!window.L) {
+    const mapElement = document.getElementById('map');
+    const filterSummary = document.getElementById('filterSummary');
+    const message = 'Leaflet did not load. Check your internet connection or allow the Leaflet CDN scripts.';
+    if (mapElement) {
+        mapElement.innerHTML = `<div class="map-error">${message}</div>`;
+    }
+    if (filterSummary) {
+        filterSummary.textContent = message;
+    }
+    throw new Error(message);
+}
 
 // Initialize the map centered on the area
 const map = L.map('map').setView([40.25, -75.05], 8);
 
-// Add OpenStreetMap tiles
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+const THEME_KEY = 'pcgMapTheme';
+
+// Add map tiles
+const lightTiles = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     maxZoom: 19,
     attribution: '&copy; OpenStreetMap contributors'
-}).addTo(map);
+});
+const darkTiles = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+    maxZoom: 19,
+    attribution: '&copy; OpenStreetMap contributors &copy; CARTO'
+});
+let activeTiles = lightTiles.addTo(map);
 
 // Array to hold markers
 const markers = [];
@@ -87,6 +109,8 @@ function icon(p) {
 
     if (p.type === 'MP') {
         iconClass = 'fas fa-building';
+    } else if (p.type.startsWith('Dunkin')) {
+        iconClass = p.combo ? 'fas fa-ice-cream' : 'fas fa-mug-hot';
     } else if (p.name && p.name.includes('GO')) {
         iconClass = 'fas fa-star';
     } else {
@@ -132,18 +156,23 @@ function popup(p) {
     const radiusLine = p.type === 'MP' && Number.isFinite(p.radiusMiles)
         ? `<br>${p.radiusMiles} ${p.radiusMiles === 1 ? 'mile' : 'miles'} radius`
         : '';
+    const regionLine = p.region ? `<br>${p.region}` : '';
 
-    return `<b>${p.id || p.name}</b><br>${p.type}${radiusLine}<br>${p.address || ''}<br>${p.lat.toFixed(6)}, ${p.lng.toFixed(6)}`;
+    return `<b>${p.name || p.id}</b><br>${p.type}${radiusLine}${regionLine}<br>${p.address || ''}<br>${p.lat.toFixed(6)}, ${p.lng.toFixed(6)}`;
 }
 
 // Function to add markers to the map
 function addMarkers() {
     // Remove existing markers
-    markers.forEach(m => map.removeLayer(m));
+    markers.forEach(m => {
+        if (m) map.removeLayer(m);
+    });
     markers.length = 0;
 
     // Add new markers
     ALL.forEach((p, i) => {
+        if (!isVisibleLocation(p)) return;
+
         const m = L.marker([p.lat, p.lng], { icon: icon(p) }).addTo(map).bindPopup(popup(p));
         // When marker is clicked, select it for radius and route appropriately
         m.on('click', () => {
@@ -161,11 +190,14 @@ function addMarkers() {
                 document.getElementById('to').value = i;
             }
         });
-        markers.push(m);
+        markers[i] = m;
     });
 
     // Fit map to bounds of all markers
-    map.fitBounds(L.latLngBounds(ALL.map(p => [p.lat, p.lng])), { padding: [30, 30] });
+    const visible = visibleLocations();
+    if (visible.length > 0) {
+        map.fitBounds(L.latLngBounds(visible.map(p => [p.lat, p.lng])), { padding: [30, 30] });
+    }
 }
 
 // Function to populate select dropdowns with locations
@@ -176,7 +208,7 @@ function fillSelects() {
     const locationSearch = document.getElementById('locationSearch');
 
     fromSelect.innerHTML = '';
-    ALL_MP.forEach((p, i) => {
+    ALL_MP.filter(isVisibleLocation).forEach((p) => {
         const option = document.createElement('option');
         const globalIndex = ALL.indexOf(p);
         option.value = globalIndex;
@@ -185,7 +217,7 @@ function fillSelects() {
     });
 
     toSelect.innerHTML = '';
-    ALL_BWW.forEach((p, i) => {
+    ALL_DESTINATIONS.filter(isVisibleLocation).forEach(p => {
         const option = document.createElement('option');
         const globalIndex = ALL.indexOf(p);
         option.value = globalIndex;
@@ -195,15 +227,15 @@ function fillSelects() {
 
     const addressTarget = document.getElementById('addressTarget');
     addressTarget.innerHTML = '';
-    ALL.forEach((p, i) => {
+    ALL.filter(isVisibleLocation).forEach((p) => {
         const option = document.createElement('option');
-        option.value = i;
-        option.textContent = `${p.type} - ${p.id || p.name}`;
+        option.value = ALL.indexOf(p);
+        option.textContent = `${p.type} - ${p.name || p.id}`;
         addressTarget.appendChild(option);
     });
 
     radiusSelect.innerHTML = '';
-    ALL_MP.forEach(p => {
+    ALL_MP.filter(isVisibleLocation).forEach(p => {
         const option = document.createElement('option');
         const globalIndex = ALL.indexOf(p);
         option.value = globalIndex;
@@ -213,10 +245,10 @@ function fillSelects() {
 
     if (locationSearch) {
         locationSearch.innerHTML = '';
-        ALL.forEach((p, i) => {
+        ALL.filter(isVisibleLocation).forEach((p) => {
             const option = document.createElement('option');
-            option.value = i;
-            option.textContent = `${p.type} - ${p.id || p.name}`;
+            option.value = ALL.indexOf(p);
+            option.textContent = `${p.type} - ${p.name || p.id}`;
             locationSearch.appendChild(option);
         });
     }
@@ -224,13 +256,43 @@ function fillSelects() {
     updateRadiusMilesInput();
     updateMPSummary();
 
-    // Default end point to first BWW
-    if (ALL_BWW.length > 0) {
-        document.getElementById('to').value = ALL.indexOf(ALL_BWW[0]);
+    // Default end point to first visible destination
+    const visibleDestinations = ALL_DESTINATIONS.filter(isVisibleLocation);
+    if (visibleDestinations.length > 0) {
+        document.getElementById('to').value = ALL.indexOf(visibleDestinations[0]);
     }
 
     // Update pin counts display
-    document.getElementById('counts').innerHTML = `${MP.length} MP pins<br>${BWW_PA.length} PA BWW pins<br>${BWW_NJ.length} NJ BWW pins`;
+    document.getElementById('counts').innerHTML = `${MP.length} MP pins<br>${BWW_PA.length} PA BWW pins<br>${BWW_NJ.length} NJ BWW pins<br>${DUNKIN.length} Dunkin pins`;
+    updateFilterSummary();
+}
+
+function updateFilterSummary() {
+    const out = document.getElementById('filterSummary');
+    if (!out) return;
+
+    const visible = visibleLocations();
+    const counts = {
+        MP: visible.filter(p => brandOf(p) === 'MP').length,
+        BWW: visible.filter(p => brandOf(p) === 'BWW').length,
+        Dunkin: visible.filter(p => brandOf(p) === 'Dunkin').length
+    };
+
+    out.textContent = `${visible.length} visible: ${counts.MP} MP, ${counts.BWW} BWW, ${counts.Dunkin} Dunkin.`;
+}
+
+function applyLocationFilters() {
+    BRAND_FILTERS.MP = document.getElementById('filterMP')?.checked ?? true;
+    BRAND_FILTERS.BWW = document.getElementById('filterBWW')?.checked ?? true;
+    BRAND_FILTERS.Dunkin = document.getElementById('filterDunkin')?.checked ?? true;
+
+    addMarkers();
+    drawAllMPRadii();
+    if (!BRAND_FILTERS.MP) {
+        clearRadius();
+    }
+    fillSelects();
+    updateMPSummary();
 }
 
 // Variables for radius circles and route line
@@ -269,19 +331,35 @@ function getNearest(items, point) {
         .sort((a, b) => a.distance - b.distance)[0];
 }
 
+function formatNearest(label, item) {
+    return item
+        ? `<b>Closest ${label}:</b> ${item.name || item.id} (${item.distance.toFixed(2)} mi)<br>`
+        : `<b>Closest ${label}:</b> no visible ${label} locations<br>`;
+}
+
 function updateMPSummary() {
     const out = document.getElementById('mpSummary');
     const mp = getSelectedRadiusCenter();
-    if (!out || !mp || mp.type !== 'MP') return;
+    if (!out) return;
+    if (!mp || mp.type !== 'MP') {
+        out.textContent = 'Select an MP to see territory details.';
+        return;
+    }
 
-    const nearestBWW = getNearest(ALL_BWW, mp);
-    const inRadius = ALL_BWW.filter(bww => haversine(mp, bww) <= mp.radiusMiles);
+    const visibleBWW = ALL_BWW.filter(isVisibleLocation);
+    const visibleDunkin = ALL_DUNKIN.filter(isVisibleLocation);
+    const nearestBWW = getNearest(visibleBWW, mp);
+    const nearestDunkin = getNearest(visibleDunkin, mp);
+    const bwwInRadius = visibleBWW.filter(bww => haversine(mp, bww) <= mp.radiusMiles);
+    const dunkinInRadius = visibleDunkin.filter(dunkin => haversine(mp, dunkin) <= mp.radiusMiles);
 
     out.innerHTML = `
         <b>${mp.id}</b><br>
         <b>Radius:</b> ${formatMiles(mp.radiusMiles)}<br>
-        <b>BWW inside radius:</b> ${inRadius.length}<br>
-        <b>Nearest BWW:</b> ${nearestBWW.name} (${nearestBWW.distance.toFixed(2)} mi)
+        <b>BWW inside radius:</b> ${bwwInRadius.length}<br>
+        <b>Dunkin inside radius:</b> ${dunkinInRadius.length}<br>
+        ${formatNearest('BWW', nearestBWW)}
+        ${formatNearest('Dunkin', nearestDunkin)}
     `;
 }
 
@@ -312,9 +390,36 @@ function togglePresentationView() {
     setTimeout(() => map.invalidateSize(), 250);
 }
 
+function setDarkMode(enabled, persist = true) {
+    document.body.classList.toggle('dark-mode', enabled);
+
+    if (activeTiles) {
+        map.removeLayer(activeTiles);
+    }
+    activeTiles = enabled ? darkTiles : lightTiles;
+    activeTiles.addTo(map);
+
+    const button = document.getElementById('themeToggle');
+    if (button) {
+        button.innerHTML = enabled
+            ? '<i class="fas fa-sun"></i> Light Mode'
+            : '<i class="fas fa-moon"></i> Dark Mode';
+    }
+
+    if (persist) {
+        localStorage.setItem(THEME_KEY, enabled ? 'dark' : 'light');
+    }
+}
+
+function toggleDarkMode() {
+    setDarkMode(!document.body.classList.contains('dark-mode'));
+}
+
 function drawAllMPRadii() {
     mpRadiusCircles.forEach(circle => map.removeLayer(circle));
     mpRadiusCircles.length = 0;
+
+    if (!BRAND_FILTERS.MP) return;
 
     ALL_MP.forEach(p => {
         if (!Number.isFinite(p.radiusMiles)) return;
@@ -337,6 +442,8 @@ function drawRadius() {
     clearRadius();
     const p = getSelectedRadiusCenter();
     const miles = getSelectedRadiusMiles();
+    if (!p) return;
+
     document.getElementById('radiusMiles').value = miles;
     radiusCircle = L.circle([p.lat, p.lng], {
         radius: miles * 1609.344, // Convert miles to meters
@@ -526,15 +633,17 @@ async function findNearestLocations() {
         return;
     }
 
-    const closestMP = getNearest(ALL_MP, point);
-    const closestBWW = getNearest(ALL_BWW, point);
-    const insideRadius = closestMP.distance <= closestMP.radiusMiles;
+    const closestMP = getNearest(ALL_MP.filter(isVisibleLocation), point);
+    const closestBWW = getNearest(ALL_BWW.filter(isVisibleLocation), point);
+    const closestDunkin = getNearest(ALL_DUNKIN.filter(isVisibleLocation), point);
+    const insideRadius = closestMP ? closestMP.distance <= closestMP.radiusMiles : false;
 
     out.innerHTML = `
-        <b>Closest MP:</b> ${closestMP.id} (${closestMP.distance.toFixed(2)} mi)<br>
-        <b>Closest BWW:</b> ${closestBWW.name} (${closestBWW.distance.toFixed(2)} mi)<br>
+        ${formatNearest('MP', closestMP)}
+        ${formatNearest('BWW', closestBWW)}
+        ${formatNearest('Dunkin', closestDunkin)}
         <b>Inside closest MP radius:</b> ${insideRadius ? 'Yes' : 'No'}<br>
-        <span class="result-muted">${closestMP.id} radius is ${formatMiles(closestMP.radiusMiles)}.</span>
+        <span class="result-muted">${closestMP ? `${closestMP.id} radius is ${formatMiles(closestMP.radiusMiles)}.` : 'Turn on MP locations to check territory radius.'}</span>
     `;
 }
 
@@ -547,6 +656,11 @@ async function routeAddress() {
 
     if (!address) {
         out.textContent = 'Please enter a start address.';
+        return;
+    }
+
+    if (!target) {
+        out.textContent = 'Please select a destination.';
         return;
     }
 
@@ -589,8 +703,13 @@ async function routeDrive() {
     clearRoute();
     const a = ALL[+document.getElementById('from').value];
     const b = ALL[+document.getElementById('to').value];
-    const straight = haversine(a, b);
     const out = document.getElementById('routeResult');
+    if (!a || !b) {
+        out.textContent = 'Please select a start and end location.';
+        return;
+    }
+
+    const straight = haversine(a, b);
     out.innerHTML = 'Calculating...';
 
     try {
@@ -654,11 +773,28 @@ async function geocodeBWW() {
     fillSelects();
 }
 
-// Initialize the map with markers and selects
-addMarkers();
-fillSelects();
-drawAllMPRadii();
-loadPinnedAddresses();
+async function initializeApp() {
+    setDarkMode(localStorage.getItem(THEME_KEY) === 'dark', false);
+
+    try {
+        const loaded = await loadLocationData();
+        if (!loaded) return;
+    } catch (e) {
+        const filterSummary = document.getElementById('filterSummary');
+        const message = 'Unable to load location data from the backend.';
+        if (filterSummary) {
+            filterSummary.textContent = message;
+        }
+        throw e;
+    }
+
+    addMarkers();
+    fillSelects();
+    drawAllMPRadii();
+    loadPinnedAddresses();
+}
+
+initializeApp();
 
 document.getElementById('radiusCenter').addEventListener('change', updateRadiusMilesInput);
 document.getElementById('radiusCenter').addEventListener('change', updateMPSummary);
@@ -672,11 +808,13 @@ document.getElementById('radiusCenter').addEventListener('change', () => {
 });
 
 // Autocomplete for address inputs, biased toward PA/NJ while staying inside the US.
-const addressSearchParams = {
+const addressSearchParams = new URLSearchParams({
+    format: 'json',
+    addressdetails: '1',
+    limit: '6',
     countrycodes: 'US',
     viewbox: '-80.8,42.7,-73.6,38.5'
-};
-const geocoder = L.Control.Geocoder.nominatim({ geocodingQueryParams: addressSearchParams });
+});
 
 function setupAddressAutocomplete(inputId, suggestionsId) {
     const input = document.getElementById(inputId);
@@ -692,16 +830,21 @@ function setupAddressAutocomplete(inputId, suggestionsId) {
             suggestions.style.display = 'none';
             return;
         }
+        debounceTimer = setTimeout(async () => {
+            try {
+                const params = new URLSearchParams(addressSearchParams);
+                params.set('q', query);
+                const response = await fetch(`https://nominatim.openstreetmap.org/search?${params}`);
+                if (!response.ok) throw new Error('address search failed');
+                const results = await response.json();
 
-        debounceTimer = setTimeout(() => {
-            geocoder.geocode(query, (results) => {
                 suggestions.innerHTML = '';
                 if (results && results.length > 0) {
                     results.slice(0, 6).forEach((result) => {
                         const div = document.createElement('div');
-                        div.textContent = result.name;
+                        div.textContent = result.display_name;
                         div.addEventListener('click', () => {
-                            input.value = result.name;
+                            input.value = result.display_name;
                             suggestions.style.display = 'none';
                         });
                         suggestions.appendChild(div);
@@ -710,7 +853,9 @@ function setupAddressAutocomplete(inputId, suggestionsId) {
                 } else {
                     suggestions.style.display = 'none';
                 }
-            });
+            } catch (e) {
+                suggestions.style.display = 'none';
+            }
         }, 250);
     });
 
