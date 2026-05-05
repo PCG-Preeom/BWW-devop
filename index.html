@@ -10,29 +10,57 @@
     <link rel="stylesheet" href="styles.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 </head>
-<body>
+<body class="auth-locked">
+    <section class="access-screen" aria-label="Access prompt">
+        <form class="access-panel" id="accessForm">
+            <div class="pcg-logo" aria-hidden="true">
+                <img src="unnamed.png" alt="">
+            </div>
+            <h1>People Capital Group</h1>
+            <div class="access-warning">
+                <i class="fas fa-triangle-exclamation"></i>
+                <b>Confidential - Authorized Access Only</b>
+                <p>This map contains proprietary business information belonging to People Capital Group. Unauthorized access, distribution, or reproduction is prohibited.</p>
+                <span>Access activity is monitored.</span>
+            </div>
+            <label for="accessToken">Access code</label>
+            <div class="access-input-row">
+                <input id="accessToken" type="password" placeholder="Enter access code" autocomplete="current-password">
+                <button type="submit" aria-label="Unlock map"><i class="fas fa-lock"></i></button>
+            </div>
+            <div id="accessMessage" class="access-message"></div>
+        </form>
+        <footer>© 2026 People Capital Group - All rights reserved</footer>
+    </section>
+
     <main id="wrap">
         <aside id="panel" aria-label="Map tools">
             <section class="side-brand">
-                <p class="eyebrow">Development Territory</p>
-                <h1>MP + BWW + Dunkin Map</h1>
-                <div class="top-legend" aria-label="Map legend summary">
-                    <span><i class="fas fa-building" style="color:#2d58cf"></i> MP</span>
-                    <span><i class="fas fa-utensils" style="color:#dc2626"></i> PA BWW</span>
-                    <span><i class="fas fa-utensils" style="color:#c2410c"></i> NJ BWW</span>
-                    <span><i class="fas fa-mug-hot" style="color:#f97316"></i> Dunkin</span>
-                    <span><i class="fas fa-cake-candles" style="color:#db2777"></i> Dunkin / BR</span>
-                    <span><i class="fas fa-star" style="color:#c2410c"></i> GO</span>
-                    <span><i class="fas fa-map-pin" style="color:#16a34a"></i> Pinned</span>
-                    <span><i class="fas fa-circle" style="color:#1e3a8a"></i> MP radius</span>
-                    <span><i class="fas fa-circle" style="color:#16a34a"></i> Pin radius</span>
+                <div class="brand-top">
+                    <div>
+                        <p class="eyebrow">Development Territory</p>
+                        <h1>MP + BWW + Dunkin</h1>
+                    </div>
+                    <div class="brand-actions">
+                        <button class="icon-btn" id="presentationToggle" onclick="togglePresentationView()" title="Presentation View"><i class="fas fa-expand"></i></button>
+                        <button class="icon-btn" id="themeToggle" onclick="toggleDarkMode()" title="Toggle Dark Mode"><i class="fas fa-moon"></i></button>
+                    </div>
                 </div>
-            </section>
-
-            <section class="row">
-                <div class="section-title"><i class="fas fa-display"></i><b>Presentation</b></div>
-                <button class="secondary" id="presentationToggle" onclick="togglePresentationView()"><i class="fas fa-expand"></i> Presentation View</button>
-                <button class="secondary" id="themeToggle" onclick="toggleDarkMode()"><i class="fas fa-moon"></i> Dark Mode</button>
+                <details class="legend-details">
+                    <summary>Legend</summary>
+                    <div class="top-legend" aria-label="Map legend summary">
+                        <span><i class="fas fa-building" style="color:#2d58cf"></i> MP</span>
+                        <span><i class="fas fa-utensils" style="color:#dc2626"></i> PA BWW</span>
+                        <span><i class="fas fa-utensils" style="color:#c2410c"></i> NJ BWW</span>
+                        <span><i class="fas fa-mug-hot" style="color:#f97316"></i> Dunkin</span>
+                        <span><i class="fas fa-cake-candles" style="color:#db2777"></i> Dunkin / BR</span>
+                        <span><i class="fas fa-star" style="color:#c2410c"></i> GO</span>
+                        <span><i class="fas fa-map-pin" style="color:#16a34a"></i> Pinned</span>
+                        <span><i class="fas fa-draw-polygon" style="color:#d0a337"></i> PA / NJ counties</span>
+                        <span><i class="fas fa-circle" style="color:#1e3a8a"></i> MP radius</span>
+                        <span><i class="fas fa-circle" style="color:#16a34a"></i> Pin radius</span>
+                    </div>
+                </details>
             </section>
 
             <details class="row tool-card" open>
@@ -45,14 +73,14 @@
                 <div id="filterSummary" class="hint"></div>
             </details>
 
-            <details class="row tool-card" open>
+            <details class="row tool-card">
                 <summary class="section-title"><i class="fas fa-search-location"></i><b>Search Location</b></summary>
                 <label>MP, BWW, or Dunkin</label>
                 <select id="locationSearch"></select>
                 <button class="primary" onclick="jumpToLocation()"><i class="fas fa-location-crosshairs"></i> Jump To Location</button>
             </details>
 
-            <details class="row tool-card" open>
+            <details class="row tool-card">
                 <summary class="section-title"><i class="fas fa-draw-polygon"></i><b>Radius Tool</b></summary>
                 <label>MP territory</label>
                 <select id="radiusCenter"></select>
@@ -65,7 +93,7 @@
                 </div>
             </details>
 
-            <details class="row tool-card" open>
+            <details class="row tool-card">
                 <summary class="section-title"><i class="fas fa-route"></i><b>Drive Distance</b></summary>
                 <label>Start</label>
                 <select id="from"></select>
@@ -137,8 +165,20 @@
 
         <section id="map" aria-label="Interactive map"></section>
         <button id="presentationExit" class="floating-exit" onclick="togglePresentationView()"><i class="fas fa-compress"></i> Exit Presentation</button>
+
+        <div id="countyDetailPanel" class="county-detail-panel">
+            <div class="cdp-header">
+                <div class="cdp-header-text">
+                    <span id="cdpBadge" class="cdp-state-badge"></span>
+                    <span id="cdpTitle" class="cdp-title"></span>
+                </div>
+                <button class="cdp-close" onclick="closeCountyDetail()" aria-label="Close"><i class="fas fa-xmark"></i></button>
+            </div>
+            <div id="cdpBody" class="cdp-body"></div>
+        </div>
     </main>
 
+    <script src="data.js"></script>
     <script src="script.js"></script>
 </body>
 </html>

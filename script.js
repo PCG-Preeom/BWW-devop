@@ -1,4 +1,4 @@
-// Location data is loaded from the authenticated backend API.
+// Location data is loaded from the static data file after local access unlock.
 let MP = [];
 let BWW_PA = [];
 let BWW_NJ = [];
@@ -8,6 +8,9 @@ let ALL_MP = [];
 let ALL_BWW = [];
 let ALL_DUNKIN = [];
 let ALL_DESTINATIONS = [];
+
+const ACCESS_TOKEN = 'PCG2026!';
+let appInitialized = false;
 
 const BRAND_FILTERS = {
     MP: true,
@@ -39,28 +42,63 @@ function normalizeLocationData(data) {
 }
 
 async function loadLocationData() {
-    let response;
-    try {
-        response = await fetch('/api/locations', { cache: 'no-store' });
-    } catch (e) {
-        response = await fetch('data.json', { cache: 'no-store' });
+    if (window.PCG_LOCATION_DATA) {
+        normalizeLocationData(window.PCG_LOCATION_DATA);
+        return true;
     }
 
-    if (response.status === 401) {
-        window.location.href = '/login';
-        return false;
-    }
-
-    if (!response.ok) {
-        response = await fetch('data.json', { cache: 'no-store' });
-    }
-
+    const response = await fetch('data.json', { cache: 'no-store' });
     if (!response.ok) {
         throw new Error('Unable to load location data.');
     }
 
     normalizeLocationData(await response.json());
     return true;
+}
+
+function unlockMap() {
+    if (appInitialized) return;
+    appInitialized = true;
+    document.body.classList.remove('auth-locked');
+    initializeApp();
+    setTimeout(() => map.invalidateSize(), 250);
+}
+
+function logAccessAttempt(success) {
+    fetch('/api/access-log', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            success,
+            path: window.location.pathname,
+            userAgent: navigator.userAgent
+        })
+    }).catch(() => {
+        // Logging only works when the map is served through server.js.
+    });
+}
+
+function setupAccessPrompt() {
+    const form = document.getElementById('accessForm');
+    const input = document.getElementById('accessToken');
+    const message = document.getElementById('accessMessage');
+
+    input?.focus();
+    form?.addEventListener('submit', (event) => {
+        event.preventDefault();
+        const success = (input?.value || '').trim() === ACCESS_TOKEN;
+        logAccessAttempt(success);
+
+        if (success) {
+            unlockMap();
+            return;
+        }
+
+        if (message) {
+            message.textContent = 'Invalid access code.';
+        }
+        input?.select();
+    });
 }
 
 function brandOf(p) {
@@ -94,6 +132,7 @@ if (!window.L) {
 const map = L.map('map').setView([40.25, -75.05], 8);
 
 const THEME_KEY = 'pcgMapTheme';
+const COUNTY_GEOJSON_URL = 'https://raw.githubusercontent.com/plotly/datasets/master/geojson-counties-fips.json';
 
 // Add map tiles
 const lightTiles = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -105,6 +144,8 @@ const darkTiles = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x
     attribution: '&copy; OpenStreetMap contributors &copy; CARTO'
 });
 let activeTiles = lightTiles.addTo(map);
+map.createPane('countyPane');
+map.getPane('countyPane').style.zIndex = 330;
 
 // Array to hold markers
 const markers = [];
@@ -112,6 +153,230 @@ const pinnedAddressMarkers = [];
 const pinnedAddressCircles = [];
 let pinnedAddresses = [];
 const PINNED_ADDRESSES_KEY = 'bwwMapPinnedAddresses';
+let paCountyLayer = null;
+let mapCountySummaryEl = null;
+setupCountySummaryControl();
+
+function countyHasLocations(feature) {
+    const counts = feature?.properties?.pcgCounts;
+    return counts && (counts.MP > 0 || counts.BWW > 0 || counts.Dunkin > 0);
+}
+
+function countyStyle(feature) {
+    const dark = document.body.classList.contains('dark-mode');
+    const highlighted = countyHasLocations(feature);
+    return {
+        color: dark ? '#d0a337' : '#a97b22',
+        weight: highlighted ? 2 : 0.8,
+        opacity: highlighted ? (dark ? 0.92 : 0.82) : 0.28,
+        fillColor: dark ? '#d0a337' : '#fbbf24',
+        fillOpacity: highlighted ? (dark ? 0.16 : 0.18) : 0.02,
+        pane: 'countyPane'
+    };
+}
+
+function countyHoverStyle() {
+    const dark = document.body.classList.contains('dark-mode');
+    return {
+        color: dark ? '#f8d675' : '#7c4f12',
+        weight: 2.4,
+        fillOpacity: dark ? 0.18 : 0.2
+    };
+}
+
+function pointInRing(point, ring) {
+    const x = point.lng;
+    const y = point.lat;
+    let inside = false;
+
+    for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+        const xi = ring[i][0];
+        const yi = ring[i][1];
+        const xj = ring[j][0];
+        const yj = ring[j][1];
+        const intersects = ((yi > y) !== (yj > y)) && x < ((xj - xi) * (y - yi)) / (yj - yi) + xi;
+        if (intersects) inside = !inside;
+    }
+
+    return inside;
+}
+
+function pointInPolygonCoordinates(point, polygon) {
+    if (!pointInRing(point, polygon[0])) return false;
+    return !polygon.slice(1).some(hole => pointInRing(point, hole));
+}
+
+function pointInFeature(point, feature) {
+    const geometry = feature?.geometry;
+    if (!geometry) return false;
+    if (geometry.type === 'Polygon') {
+        return pointInPolygonCoordinates(point, geometry.coordinates);
+    }
+    if (geometry.type === 'MultiPolygon') {
+        return geometry.coordinates.some(polygon => pointInPolygonCoordinates(point, polygon));
+    }
+    return false;
+}
+
+function countyCounts(feature) {
+    const counts = { MP: 0, BWW: 0, Dunkin: 0 };
+    ALL.forEach(point => {
+        if (!pointInFeature(point, feature)) return;
+        const brand = brandOf(point);
+        if (counts[brand] !== undefined) {
+            counts[brand] += 1;
+        }
+    });
+    return counts;
+}
+
+function countyName(feature) {
+    const name = feature?.properties?.NAME || 'Pennsylvania county';
+    return name.endsWith('County') || name === 'Philadelphia' ? name : `${name} County`;
+}
+
+function countyState(feature) {
+    const fips = String(feature?.id || '');
+    if (fips.startsWith('42')) return 'Pennsylvania';
+    if (fips.startsWith('34')) return 'New Jersey';
+    return 'County';
+}
+
+function updateCountySummary(feature = null) {
+    const out = document.getElementById('countySummary');
+
+    if (!feature) {
+        if (out) {
+            out.textContent = 'Hover a highlighted county to see location counts.';
+        }
+        if (mapCountySummaryEl) {
+            mapCountySummaryEl.classList.remove('is-active');
+            mapCountySummaryEl.innerHTML = '';
+        }
+        return;
+    }
+
+    const counts = feature.properties.pcgCounts;
+    const text = `${countyName(feature)} (${countyState(feature)}): ${counts.MP} MP, ${counts.BWW} BWW, ${counts.Dunkin} Dunkin.`;
+    if (out) {
+        out.textContent = text;
+    }
+    if (mapCountySummaryEl) {
+        mapCountySummaryEl.innerHTML = `
+            <b>${escapeHtml(countyName(feature))}</b>
+            <span>${escapeHtml(countyState(feature))}</span>
+            <small>${counts.MP} MP · ${counts.BWW} BWW · ${counts.Dunkin} Dunkin</small>
+        `;
+        mapCountySummaryEl.classList.add('is-active');
+    }
+}
+
+function setupCountySummaryControl() {
+    const control = L.control({ position: 'topright' });
+    control.onAdd = () => {
+        mapCountySummaryEl = L.DomUtil.create('div', 'map-county-summary');
+        L.DomEvent.disableClickPropagation(mapCountySummaryEl);
+        return mapCountySummaryEl;
+    };
+    control.addTo(map);
+}
+
+function openCountyDetail(feature, bounds) {
+    const panel    = document.getElementById('countyDetailPanel');
+    const titleEl  = document.getElementById('cdpTitle');
+    const badgeEl  = document.getElementById('cdpBadge');
+    const bodyEl   = document.getElementById('cdpBody');
+    if (!panel) return;
+
+    const inCounty = ALL.filter(p => pointInFeature(p, feature));
+    const mp     = inCounty.filter(p => p.type === 'MP');
+    const bww    = inCounty.filter(p => p.type.startsWith('BWW'));
+    const dunkin = inCounty.filter(p => p.type.startsWith('Dunkin'));
+
+    const stateFull = countyState(feature);
+    const stateAbbr = stateFull === 'Pennsylvania' ? 'PA' : 'NJ';
+
+    badgeEl.textContent = stateFull;
+    titleEl.textContent = countyName(feature);
+
+    const buildSection = (label, iconCls, items) => {
+        if (!items.length) return '';
+        const rows = items.map(p => `<div class="cdp-item">${escapeHtml(p.name)}</div>`).join('');
+        return `<div class="cdp-section"><div class="cdp-section-label"><i class="${iconCls}"></i> ${escapeHtml(label)}</div>${rows}</div>`;
+    };
+
+    bodyEl.innerHTML =
+        buildSection('MP', 'fas fa-building', mp) +
+        buildSection('Buffalo Wild Wings', 'fas fa-utensils', bww) +
+        buildSection('Dunkin\'', 'fas fa-mug-hot', dunkin);
+
+    panel.classList.add('is-open');
+
+    if (bounds) {
+        map.fitBounds(bounds, { padding: [48, 48] });
+    }
+}
+
+function closeCountyDetail() {
+    document.getElementById('countyDetailPanel')?.classList.remove('is-open');
+}
+
+map.on('click', closeCountyDetail);
+
+async function loadCountyHighlights() {
+    try {
+        const response = await fetch(COUNTY_GEOJSON_URL, { cache: 'force-cache' });
+        if (!response.ok) throw new Error('county fetch failed');
+        const geojson = await response.json();
+        const highlightedStates = new Set(['34', '42']);
+        const countyFeatures = {
+            type: 'FeatureCollection',
+            features: geojson.features
+                .filter(feature => highlightedStates.has(String(feature.id || '').slice(0, 2)))
+                .map(feature => ({
+                    ...feature,
+                    properties: {
+                        ...feature.properties,
+                        pcgCounts: countyCounts(feature)
+                    }
+                }))
+                .filter(feature => {
+                    const c = feature.properties.pcgCounts;
+                    return c.MP + c.BWW + c.Dunkin > 0;
+                })
+        };
+
+        if (paCountyLayer) {
+            map.removeLayer(paCountyLayer);
+        }
+
+        paCountyLayer = L.geoJSON(countyFeatures, {
+            pane: 'countyPane',
+            style: countyStyle,
+            onEachFeature: (feature, layer) => {
+                layer.on({
+                    mouseover: () => {
+                        layer.setStyle(countyHoverStyle());
+                        layer.bringToFront();
+                        updateCountySummary(feature);
+                    },
+                    mouseout: () => {
+                        paCountyLayer?.resetStyle(layer);
+                        updateCountySummary();
+                    },
+                    click: () => {
+                        openCountyDetail(feature, layer.getBounds());
+                    }
+                });
+            }
+        }).addTo(map);
+    } catch (e) {
+        const filterSummary = document.getElementById('filterSummary');
+        if (filterSummary) {
+            filterSummary.textContent = `${filterSummary.textContent} County boundaries could not load.`;
+        }
+    }
+}
 
 // Function to create a custom icon for markers
 function icon(p) {
@@ -400,8 +665,9 @@ function togglePresentationView() {
     const button = document.getElementById('presentationToggle');
     if (button) {
         button.innerHTML = enabled
-            ? '<i class="fas fa-compress"></i> Exit Presentation'
-            : '<i class="fas fa-expand"></i> Presentation View';
+            ? '<i class="fas fa-compress"></i>'
+            : '<i class="fas fa-expand"></i>';
+        button.title = enabled ? 'Exit Presentation' : 'Presentation View';
     }
     setTimeout(() => map.invalidateSize(), 250);
 }
@@ -414,12 +680,16 @@ function setDarkMode(enabled, persist = true) {
     }
     activeTiles = enabled ? darkTiles : lightTiles;
     activeTiles.addTo(map);
+    if (paCountyLayer) {
+        paCountyLayer.setStyle(countyStyle);
+    }
 
     const button = document.getElementById('themeToggle');
     if (button) {
         button.innerHTML = enabled
-            ? '<i class="fas fa-sun"></i> Light Mode'
-            : '<i class="fas fa-moon"></i> Dark Mode';
+            ? '<i class="fas fa-sun"></i>'
+            : '<i class="fas fa-moon"></i>';
+        button.title = enabled ? 'Switch to Light Mode' : 'Switch to Dark Mode';
     }
 
     if (persist) {
@@ -797,7 +1067,7 @@ async function initializeApp() {
         if (!loaded) return;
     } catch (e) {
         const filterSummary = document.getElementById('filterSummary');
-        const message = 'Unable to load location data from the backend.';
+        const message = 'Unable to load location data. Make sure data.js is next to index.html.';
         if (filterSummary) {
             filterSummary.textContent = message;
         }
@@ -806,11 +1076,12 @@ async function initializeApp() {
 
     addMarkers();
     fillSelects();
+    await loadCountyHighlights();
     drawAllMPRadii();
     loadPinnedAddresses();
 }
 
-initializeApp();
+setupAccessPrompt();
 
 document.getElementById('radiusCenter').addEventListener('change', updateRadiusMilesInput);
 document.getElementById('radiusCenter').addEventListener('change', updateMPSummary);

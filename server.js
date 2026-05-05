@@ -1,44 +1,31 @@
 const http = require('http');
 const fs = require('fs');
+const os = require('os');
 const path = require('path');
-const crypto = require('crypto');
 
 const root = __dirname;
-const host = '127.0.0.1';
-const port = Number(process.env.PORT) || 3000;
-const password = process.env.MAP_PASSWORD || 'PCG2026!';
-const sessions = new Map();
+const host = process.env.HOST || '0.0.0.0';
+let port = Number(process.env.PORT) || 3000;
+const logsDir = path.join(root, 'logs');
+const accessLogPath = path.join(logsDir, 'access.log');
 
-const types = {
+const contentTypes = {
     '.html': 'text/html; charset=utf-8',
     '.css': 'text/css; charset=utf-8',
     '.js': 'text/javascript; charset=utf-8',
-    '.json': 'application/json; charset=utf-8'
+    '.json': 'application/json; charset=utf-8',
+    '.png': 'image/png'
 };
-
-function parseCookies(req) {
-    return Object.fromEntries((req.headers.cookie || '').split(';').filter(Boolean).map(cookie => {
-        const [key, ...value] = cookie.trim().split('=');
-        return [key, decodeURIComponent(value.join('='))];
-    }));
-}
-
-function isAuthed(req) {
-    const sid = parseCookies(req).pcg_map_session;
-    return Boolean(sid && sessions.has(sid));
-}
 
 function send(res, status, body, headers = {}) {
     res.writeHead(status, headers);
     res.end(body);
 }
 
-function redirect(res, location) {
-    send(res, 302, '', { Location: location });
-}
+function serveFile(res, requestPath) {
+    const cleanPath = requestPath === '/' ? '/index.html' : requestPath;
+    const filePath = path.resolve(root, `.${decodeURIComponent(cleanPath)}`);
 
-function serveFile(res, relativePath) {
-    const filePath = path.resolve(root, relativePath);
     if (!filePath.startsWith(root)) {
         send(res, 403, 'Forbidden');
         return;
@@ -50,9 +37,9 @@ function serveFile(res, relativePath) {
             return;
         }
 
-        const ext = path.extname(filePath);
+        const ext = path.extname(filePath).toLowerCase();
         const headers = {
-            'Content-Type': types[ext] || 'application/octet-stream'
+            'Content-Type': contentTypes[ext] || 'application/octet-stream'
         };
 
         if (['.html', '.css', '.js', '.json'].includes(ext)) {
@@ -63,111 +50,106 @@ function serveFile(res, relativePath) {
     });
 }
 
-function readBody(req) {
-    return new Promise(resolve => {
+function readJsonBody(req) {
+    return new Promise((resolve) => {
         let body = '';
-        req.on('data', chunk => {
+
+        req.on('data', (chunk) => {
             body += chunk;
-            if (body.length > 10000) req.destroy();
+            if (body.length > 10000) {
+                req.destroy();
+            }
         });
-        req.on('end', () => resolve(body));
+
+        req.on('end', () => {
+            try {
+                resolve(JSON.parse(body || '{}'));
+            } catch {
+                resolve({});
+            }
+        });
     });
 }
 
-function loginPage(error = '') {
-    return `<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - MP + BWW + Dunkin Map</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/styles.css">
-</head>
-<body>
-    <section class="login-screen server-login">
-        <form class="login-panel" method="post" action="/login">
-            <p class="eyebrow">Private Map</p>
-            <h1>MP + BWW + Dunkin Map</h1>
-            <label for="password">Password</label>
-            <input id="password" name="password" type="password" autocomplete="current-password" autofocus>
-            <button class="primary" type="submit">Log In</button>
-            <div class="login-message">${error}</div>
-        </form>
-    </section>
-</body>
-</html>`;
+function getClientIp(req) {
+    const forwardedFor = req.headers['x-forwarded-for'];
+    const rawIp = Array.isArray(forwardedFor)
+        ? forwardedFor[0]
+        : (forwardedFor || req.socket.remoteAddress || '');
+
+    return rawIp.split(',')[0].trim().replace(/^::ffff:/, '');
 }
 
-async function handleLogin(req, res) {
-    const body = await readBody(req);
-    const form = new URLSearchParams(body);
-    const submitted = form.get('password') || '';
-
-    if (submitted !== password) {
-        send(res, 401, loginPage('Incorrect password.'), { 'Content-Type': 'text/html; charset=utf-8' });
-        return;
-    }
-
-    const sid = crypto.randomBytes(32).toString('hex');
-    sessions.set(sid, { createdAt: Date.now() });
-    send(res, 302, '', {
-        Location: '/',
-        'Set-Cookie': `pcg_map_session=${sid}; HttpOnly; SameSite=Strict; Path=/; Max-Age=28800`
-    });
+function appendAccessLog(entry) {
+    fs.mkdirSync(logsDir, { recursive: true });
+    fs.appendFileSync(accessLogPath, `${JSON.stringify(entry)}\n`, 'utf8');
 }
 
-http.createServer(async (req, res) => {
-    const url = new URL(req.url, `http://${req.headers.host}`);
-    const pathname = url.pathname;
+function localNetworkUrls() {
+    const urls = [];
+    const interfaces = os.networkInterfaces();
 
-    if (pathname === '/login' && req.method === 'GET') {
-        if (isAuthed(req)) return redirect(res, '/');
-        send(res, 200, loginPage(), { 'Content-Type': 'text/html; charset=utf-8' });
-        return;
-    }
-
-    if (pathname === '/login' && req.method === 'POST') {
-        await handleLogin(req, res);
-        return;
-    }
-
-    if (pathname === '/sw.js') {
-        send(res, 204, '', { 'Cache-Control': 'no-store' });
-        return;
-    }
-
-    if (pathname === '/styles.css') {
-        serveFile(res, 'styles.css');
-        return;
-    }
-
-    if (!isAuthed(req)) {
-        if (pathname === '/api/locations') {
-            send(res, 401, 'Unauthorized');
-            return;
+    for (const details of Object.values(interfaces)) {
+        for (const item of details || []) {
+            if (item.family === 'IPv4' && !item.internal) {
+                urls.push(`http://${item.address}:${port}/`);
+            }
         }
-        redirect(res, '/login');
+    }
+
+    return urls;
+}
+
+async function handleAccessLog(req, res) {
+    const body = await readJsonBody(req);
+    const entry = {
+        timestamp: new Date().toISOString(),
+        ip: getClientIp(req),
+        success: Boolean(body.success),
+        path: typeof body.path === 'string' ? body.path.slice(0, 200) : '',
+        userAgent: typeof body.userAgent === 'string'
+            ? body.userAgent.slice(0, 500)
+            : (req.headers['user-agent'] || '').slice(0, 500)
+    };
+
+    appendAccessLog(entry);
+    send(res, 204, '', { 'Cache-Control': 'no-store' });
+}
+
+const server = http.createServer(async (req, res) => {
+    const url = new URL(req.url, `http://${req.headers.host}`);
+
+    if (url.pathname === '/api/access-log' && req.method === 'POST') {
+        await handleAccessLog(req, res);
         return;
     }
 
-    if (pathname === '/' || pathname === '/index.html') {
-        serveFile(res, 'index.html');
-        return;
-    }
-
-    if (pathname === '/api/locations') {
-        serveFile(res, 'data.json');
-        return;
-    }
-
-    if (pathname === '/data.json') {
+    if (url.pathname.startsWith('/api/')) {
         send(res, 404, 'Not found');
         return;
     }
 
-    serveFile(res, `.${pathname}`);
-}).listen(port, host, () => {
-    console.log(`Map app running at http://${host}:${port}/`);
-    console.log('Default password: PCG2026!');
+    serveFile(res, url.pathname);
 });
+
+function startServer() {
+    server.listen(port, host, () => {
+        console.log(`Map app running at http://localhost:${port}/`);
+        for (const url of localNetworkUrls()) {
+            console.log(`Network URL: ${url}`);
+        }
+        console.log(`Access attempts will be logged to ${accessLogPath}`);
+    });
+}
+
+server.on('error', (error) => {
+    if (error.code === 'EADDRINUSE' && !process.env.PORT) {
+        port += 1;
+        startServer();
+        return;
+    }
+
+    throw error;
+});
+
+startServer();
