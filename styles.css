@@ -34,6 +34,18 @@ body {
     overflow: hidden;
 }
 
+body.dark-mode {
+    --bg: #0f172a;
+    --panel: rgba(10, 16, 30, 0.94);
+    --surface: rgba(17, 24, 39, 0.88);
+    --surface-2: rgba(30, 41, 59, 0.82);
+    --text: #e5edf7;
+    --muted: #9aa8bb;
+    --line: rgba(100, 116, 139, 0.42);
+    --soft-shadow: 0 10px 24px rgba(0, 0, 0, 0.26);
+    background: linear-gradient(135deg, #07111f 0%, #101827 48%, #0f172a 100%);
+}
+
 body.auth-locked #wrap {
     visibility: hidden;
 }
@@ -195,6 +207,11 @@ body.dark-mode .login-message {
     scrollbar-color: #94a3b8 transparent;
 }
 
+body.dark-mode #panel {
+    border-right-color: rgba(100, 116, 139, 0.28);
+    box-shadow: 12px 0 32px rgba(0, 0, 0, 0.3);
+}
+
 #map {
     flex: 1;
     min-width: 0;
@@ -271,6 +288,10 @@ body.presentation-mode .floating-exit {
     backdrop-filter: blur(18px) saturate(1.2);
 }
 
+body.dark-mode .row {
+    border-color: rgba(100, 116, 139, 0.34);
+}
+
 details.row {
     padding: 0;
     overflow: visible;
@@ -344,6 +365,12 @@ details[open] > summary.section-title::after {
     border-radius: 10px;
 }
 
+body.dark-mode .section-title i {
+    color: #93c5fd;
+    background: rgba(37, 99, 235, 0.2);
+    border-color: rgba(96, 165, 250, 0.24);
+}
+
 .mini-title {
     margin-bottom: 8px;
     color: #334155;
@@ -351,6 +378,11 @@ details[open] > summary.section-title::after {
     font-weight: 800;
     text-transform: uppercase;
     letter-spacing: 0;
+}
+
+body.dark-mode .mini-title,
+body.dark-mode label {
+    color: #bac7d8;
 }
 
 label {
@@ -388,6 +420,12 @@ label {
     cursor: pointer;
 }
 
+body.dark-mode .filter-option {
+    color: #dbeafe;
+    background: rgba(15, 23, 42, 0.72);
+    border-color: rgba(100, 116, 139, 0.44);
+}
+
 .filter-option input {
     width: 16px;
     height: 16px;
@@ -408,6 +446,22 @@ input[type="number"] {
     border-radius: 10px;
     font-size: 14px;
     transition: border-color 0.16s ease, box-shadow 0.16s ease, background-color 0.16s ease;
+}
+
+body.dark-mode select,
+body.dark-mode input[type="text"],
+body.dark-mode input[type="password"],
+body.dark-mode input[type="number"] {
+    color: #e5edf7;
+    background: rgba(15, 23, 42, 0.78);
+    border-color: rgba(100, 116, 139, 0.5);
+}
+
+body.dark-mode select:hover,
+body.dark-mode input[type="text"]:hover,
+body.dark-mode input[type="password"]:hover,
+body.dark-mode input[type="number"]:hover {
+    border-color: #64748b;
 }
 
 select {
@@ -482,8 +536,18 @@ button.secondary {
     border-color: rgba(148, 163, 184, 0.38);
 }
 
+body.dark-mode button.secondary {
+    color: #dbeafe;
+    background: rgba(30, 41, 59, 0.78);
+    border-color: rgba(100, 116, 139, 0.44);
+}
+
 button.secondary:hover {
     background: #cbd5e1;
+}
+
+body.dark-mode button.secondary:hover {
+    background: rgba(51, 65, 85, 0.88);
 }
 
 .result {
@@ -498,10 +562,20 @@ button.secondary:hover {
     line-height: 1.45;
 }
 
+body.dark-mode .result {
+    color: #dbeafe;
+    background: rgba(15, 23, 42, 0.8);
+    border-color: rgba(96, 165, 250, 0.28);
+}
+
 .result-muted {
     display: block;
     margin-top: 8px;
     color: #475569;
+}
+
+body.dark-mode .result-muted {
+    color: #9aa8bb;
 }
 
 .hint {
@@ -599,6 +673,52 @@ button.secondary:hover {
 
 .leaflet-control-zoom a {
     color: #0f172a;
+}
+
+.map-icon-marker,
+.map-pin-marker {
+    --marker-color: #1e3a8a;
+    display: inline-grid;
+    place-items: center;
+    width: 28px;
+    height: 28px;
+    color: var(--marker-color);
+    background: #ffffff;
+    border: 2px solid var(--marker-color);
+    border-radius: 50%;
+    box-shadow: 0 8px 18px rgba(15, 23, 42, 0.26);
+    font-size: 14px;
+    line-height: 1;
+}
+
+.map-icon-marker--mp {
+    --marker-color: #2d58cf;
+}
+
+.map-icon-marker--bww-pa {
+    --marker-color: #dc2626;
+}
+
+.map-icon-marker--bww-nj,
+.map-icon-marker--bww-go {
+    --marker-color: #c2410c;
+}
+
+.map-icon-marker--dunkin {
+    --marker-color: #f97316;
+}
+
+.map-icon-marker--combo {
+    --marker-color: #db2777;
+}
+
+.map-pin-marker {
+    --marker-color: #16a34a;
+    background: transparent;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+    font-size: 30px;
 }
 
 .leaflet-popup-content-wrapper {

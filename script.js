@@ -16,10 +16,14 @@ const BRAND_FILTERS = {
 };
 
 function normalizeLocationData(data) {
-    MP = data.mp || [];
-    BWW_PA = data.bwwPa || [];
-    BWW_NJ = data.bwwNj || [];
-    DUNKIN = data.dunkin || [];
+    const normalizeGroup = (items = []) => items
+        .map(item => ({ ...item, lat: Number(item.lat), lng: Number(item.lng) }))
+        .filter(item => Number.isFinite(item.lat) && Number.isFinite(item.lng));
+
+    MP = normalizeGroup(data.mp);
+    BWW_PA = normalizeGroup(data.bwwPa);
+    BWW_NJ = normalizeGroup(data.bwwNj);
+    DUNKIN = normalizeGroup(data.dunkin);
 
     ALL = [
         ...MP.map(x => ({ ...x, type: 'MP', color: '#1e3a8a' })),
@@ -35,21 +39,28 @@ function normalizeLocationData(data) {
 }
 
 async function loadLocationData() {
-    const response = await fetch('/api/locations');
+    let response;
+    try {
+        response = await fetch('/api/locations', { cache: 'no-store' });
+    } catch (e) {
+        response = await fetch('data.json', { cache: 'no-store' });
+    }
+
     if (response.status === 401) {
         window.location.href = '/login';
         return false;
     }
+
+    if (!response.ok) {
+        response = await fetch('data.json', { cache: 'no-store' });
+    }
+
     if (!response.ok) {
         throw new Error('Unable to load location data.');
     }
+
     normalizeLocationData(await response.json());
     return true;
-}
-
-async function logoutMap() {
-    await fetch('/logout', { method: 'POST' });
-    window.location.href = '/login';
 }
 
 function brandOf(p) {
@@ -104,33 +115,38 @@ const PINNED_ADDRESSES_KEY = 'bwwMapPinnedAddresses';
 
 // Function to create a custom icon for markers
 function icon(p) {
-    let iconClass = '';
-    let color = p.color;
+    let iconClass = 'fas fa-utensils';
+    let markerClass = 'map-icon-marker--bww-pa';
 
     if (p.type === 'MP') {
         iconClass = 'fas fa-building';
+        markerClass = 'map-icon-marker--mp';
     } else if (p.type.startsWith('Dunkin')) {
-        iconClass = p.combo ? 'fas fa-ice-cream' : 'fas fa-mug-hot';
+        iconClass = p.combo ? 'fas fa-cake-candles' : 'fas fa-mug-hot';
+        markerClass = p.combo ? 'map-icon-marker--combo' : 'map-icon-marker--dunkin';
     } else if (p.name && p.name.includes('GO')) {
         iconClass = 'fas fa-star';
-    } else {
-        iconClass = 'fas fa-utensils';
+        markerClass = 'map-icon-marker--bww-go';
+    } else if (p.type === 'BWW NJ') {
+        markerClass = 'map-icon-marker--bww-nj';
     }
 
     return L.divIcon({
         className: '',
-        html: `<i class="${iconClass}" style="color: ${color}; font-size: 18px;"></i>`,
-        iconSize: [18, 18],
-        iconAnchor: [9, 9]
+        html: `<span class="map-icon-marker ${markerClass}" aria-hidden="true"><i class="${iconClass}"></i></span>`,
+        iconSize: [32, 32],
+        iconAnchor: [16, 16],
+        popupAnchor: [0, -16]
     });
 }
 
 function pinnedAddressIcon() {
     return L.divIcon({
         className: '',
-        html: '<i class="fas fa-map-pin" style="color: #16a34a; font-size: 24px;"></i>',
-        iconSize: [24, 24],
-        iconAnchor: [12, 24]
+        html: '<span class="map-pin-marker" aria-hidden="true"><i class="fas fa-map-pin"></i></span>',
+        iconSize: [32, 32],
+        iconAnchor: [16, 31],
+        popupAnchor: [0, -28]
     });
 }
 

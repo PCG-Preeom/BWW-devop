@@ -50,9 +50,16 @@ function serveFile(res, relativePath) {
             return;
         }
 
-        send(res, 200, body, {
-            'Content-Type': types[path.extname(filePath)] || 'application/octet-stream'
-        });
+        const ext = path.extname(filePath);
+        const headers = {
+            'Content-Type': types[ext] || 'application/octet-stream'
+        };
+
+        if (['.html', '.css', '.js', '.json'].includes(ext)) {
+            headers['Cache-Control'] = 'no-store';
+        }
+
+        send(res, 200, body, headers);
     });
 }
 
@@ -110,14 +117,6 @@ async function handleLogin(req, res) {
     });
 }
 
-function handleLogout(req, res) {
-    const sid = parseCookies(req).pcg_map_session;
-    if (sid) sessions.delete(sid);
-    send(res, 204, '', {
-        'Set-Cookie': 'pcg_map_session=; HttpOnly; SameSite=Strict; Path=/; Max-Age=0'
-    });
-}
-
 http.createServer(async (req, res) => {
     const url = new URL(req.url, `http://${req.headers.host}`);
     const pathname = url.pathname;
@@ -130,11 +129,6 @@ http.createServer(async (req, res) => {
 
     if (pathname === '/login' && req.method === 'POST') {
         await handleLogin(req, res);
-        return;
-    }
-
-    if (pathname === '/logout' && (req.method === 'POST' || req.method === 'GET')) {
-        handleLogout(req, res);
         return;
     }
 
