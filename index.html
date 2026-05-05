@@ -75,8 +75,18 @@
 
             <details class="row tool-card">
                 <summary class="section-title"><i class="fas fa-search-location"></i><b>Search Location</b></summary>
-                <label>MP, BWW, or Dunkin</label>
+                <label>Looking for</label>
+                <fieldset class="search-type-toggle" aria-label="Location type">
+                    <label><input type="radio" name="locationSearchType" value="All" checked onchange="applySearchLocationFilter()"> <span>All</span></label>
+                    <label><input type="radio" name="locationSearchType" value="MP" onchange="applySearchLocationFilter()"> <span>MP</span></label>
+                    <label><input type="radio" name="locationSearchType" value="BWW" onchange="applySearchLocationFilter()"> <span>BWW</span></label>
+                    <label><input type="radio" name="locationSearchType" value="Dunkin" onchange="applySearchLocationFilter()"> <span>Dunkin</span></label>
+                </fieldset>
+                <label for="locationSearchText">Search by name, ID, or address</label>
+                <input id="locationSearchText" type="text" placeholder="Start typing..." oninput="applySearchLocationFilter()">
+                <label for="locationSearch">Matching locations</label>
                 <select id="locationSearch"></select>
+                <div id="locationSearchSummary" class="hint"></div>
                 <button class="primary" onclick="jumpToLocation()"><i class="fas fa-location-crosshairs"></i> Jump To Location</button>
             </details>
 

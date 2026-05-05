@@ -17,6 +17,7 @@ const BRAND_FILTERS = {
     BWW: true,
     Dunkin: true
 };
+let locationSearchType = 'All';
 
 function normalizeLocationData(data) {
     const normalizeGroup = (items = []) => items
@@ -114,6 +115,24 @@ function isVisibleLocation(p) {
 
 function visibleLocations() {
     return ALL.filter(isVisibleLocation);
+}
+
+function locationSearchLabel(p) {
+    const name = p.name || p.id || 'Unnamed location';
+    if (p.type === 'MP') return `MP - ${p.id}`;
+    return `${p.type} - ${name}`;
+}
+
+function locationSearchText(p) {
+    return [
+        p.id,
+        p.name,
+        p.type,
+        p.address,
+        p.city,
+        p.state,
+        p.zip
+    ].filter(Boolean).join(' ').toLowerCase();
 }
 if (!window.L) {
     const mapElement = document.getElementById('map');
@@ -486,7 +505,6 @@ function fillSelects() {
     const fromSelect = document.getElementById('from');
     const toSelect = document.getElementById('to');
     const radiusSelect = document.getElementById('radiusCenter');
-    const locationSearch = document.getElementById('locationSearch');
 
     fromSelect.innerHTML = '';
     ALL_MP.filter(isVisibleLocation).forEach((p) => {
@@ -524,15 +542,7 @@ function fillSelects() {
         radiusSelect.appendChild(option);
     });
 
-    if (locationSearch) {
-        locationSearch.innerHTML = '';
-        ALL.filter(isVisibleLocation).forEach((p) => {
-            const option = document.createElement('option');
-            option.value = ALL.indexOf(p);
-            option.textContent = `${p.type} - ${p.name || p.id}`;
-            locationSearch.appendChild(option);
-        });
-    }
+    fillLocationSearchSelect();
 
     updateRadiusMilesInput();
     updateMPSummary();
@@ -546,6 +556,48 @@ function fillSelects() {
     // Update pin counts display
     document.getElementById('counts').innerHTML = `${MP.length} MP pins<br>${BWW_PA.length} PA BWW pins<br>${BWW_NJ.length} NJ BWW pins<br>${DUNKIN.length} Dunkin pins`;
     updateFilterSummary();
+}
+
+function fillLocationSearchSelect() {
+    const locationSearch = document.getElementById('locationSearch');
+    const summary = document.getElementById('locationSearchSummary');
+    const button = document.querySelector('button[onclick="jumpToLocation()"]');
+    if (!locationSearch) return;
+
+    const previousValue = locationSearch.value;
+    const query = (document.getElementById('locationSearchText')?.value || '').trim().toLowerCase();
+    const matches = ALL
+        .filter(isVisibleLocation)
+        .filter(p => locationSearchType === 'All' || brandOf(p) === locationSearchType)
+        .filter(p => !query || locationSearchText(p).includes(query));
+
+    locationSearch.innerHTML = '';
+    matches.forEach((p) => {
+        const option = document.createElement('option');
+        option.value = ALL.indexOf(p);
+        option.textContent = locationSearchLabel(p);
+        locationSearch.appendChild(option);
+    });
+
+    if (matches.some(p => String(ALL.indexOf(p)) === previousValue)) {
+        locationSearch.value = previousValue;
+    }
+
+    if (summary) {
+        const typeLabel = locationSearchType === 'All' ? 'locations' : locationSearchType;
+        summary.textContent = matches.length
+            ? `${matches.length} matching ${typeLabel}.`
+            : `No matching ${typeLabel}. Check the visible location filters above.`;
+    }
+
+    if (button) {
+        button.disabled = matches.length === 0;
+    }
+}
+
+function applySearchLocationFilter() {
+    locationSearchType = document.querySelector('input[name="locationSearchType"]:checked')?.value || 'All';
+    fillLocationSearchSelect();
 }
 
 function updateFilterSummary() {

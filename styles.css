@@ -634,6 +634,65 @@ body.dark-mode .filter-option {
     accent-color: var(--blue);
 }
 
+.search-type-toggle {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 6px;
+    margin: 7px 0 10px;
+    padding: 3px;
+    border: 1px solid rgba(148, 163, 184, 0.38);
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.52);
+}
+
+body.dark-mode .search-type-toggle {
+    border-color: rgba(189, 148, 52, 0.25);
+    background: rgba(17, 19, 24, 0.62);
+}
+
+.search-type-toggle label {
+    display: block;
+    min-width: 0;
+    margin: 0;
+    cursor: pointer;
+}
+
+.search-type-toggle input {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.search-type-toggle span {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 31px;
+    padding: 6px 7px;
+    color: #475569;
+    border-radius: 7px;
+    font-size: 12px;
+    font-weight: 800;
+    text-transform: none;
+    transition: background 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.search-type-toggle input:checked + span {
+    color: #ffffff;
+    background: linear-gradient(135deg, #2563eb, #1d4ed8);
+    box-shadow: 0 6px 15px rgba(37, 99, 235, 0.18);
+}
+
+body.dark-mode .search-type-toggle span {
+    color: #c8b98f;
+}
+
+body.dark-mode .search-type-toggle input:checked + span {
+    color: #05070b;
+    background: linear-gradient(135deg, #d0a337, #a97b22);
+    box-shadow: 0 6px 15px rgba(0, 0, 0, 0.28);
+}
+
 select,
 input[type="text"],
 input[type="password"],
@@ -713,6 +772,12 @@ button {
     font-weight: 700;
     cursor: pointer;
     transition: box-shadow 0.16s ease, background-color 0.16s ease, border-color 0.16s ease;
+}
+
+button:disabled {
+    cursor: not-allowed;
+    opacity: 0.56;
+    box-shadow: none;
 }
 
 .button-row button {
@@ -1210,6 +1275,10 @@ body.dark-mode .cdp-section-label {
 
     .button-row {
         grid-template-columns: 1fr;
+    }
+
+    .search-type-toggle {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 
     .top-legend span {
