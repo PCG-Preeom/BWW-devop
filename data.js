@@ -161,32 +161,32 @@ window.PCG_LOCATION_DATA = {
     {
       "name": "Buffalo Wild Wings - Downingtown",
       "address": "103 Quarry Road, Downingtown, PA 19335",
-      "lat": 40.0066,
-      "lng": -75.6922
+      "lat": 40.016658,
+      "lng": -75.672681
     },
     {
       "name": "Buffalo Wild Wings - Easton",
       "address": "3798 Dryland Way, Easton, PA 18045",
-      "lat": 40.6706,
-      "lng": -75.2867
+      "lat": 40.713584,
+      "lng": -75.285785
     },
     {
       "name": "Buffalo Wild Wings - Glen Mills",
       "address": "920 Baltimore Pike, Glen Mills, PA 19342",
-      "lat": 39.8818,
-      "lng": -75.531
+      "lat": 39.883481,
+      "lng": -75.533077
     },
     {
       "name": "Buffalo Wild Wings - King of Prussia",
       "address": "690 West Dekalb Pike, King of Prussia, PA 19406",
-      "lat": 40.0911,
-      "lng": -75.3872
+      "lat": 40.089338,
+      "lng": -75.385154
     },
     {
       "name": "Buffalo Wild Wings - Lancaster",
       "address": "2065 Fruitville Pike, Lancaster, PA 17601",
-      "lat": 40.073,
-      "lng": -76.3197
+      "lat": 40.076913,
+      "lng": -76.324739
     },
     {
       "name": "Buffalo Wild Wings - Langhorne",
@@ -197,82 +197,82 @@ window.PCG_LOCATION_DATA = {
     {
       "name": "Buffalo Wild Wings - Philadelphia Roosevelt Blvd.",
       "address": "9701 Roosevelt Road, Philadelphia, PA 19114",
-      "lat": 40.0813,
-      "lng": -75.0218
+      "lat": 40.082711,
+      "lng": -75.025720
     },
     {
       "name": "Buffalo Wild Wings - Phoenixville",
       "address": "1510 Egypt Road, Phoenixville, PA 19460",
-      "lat": 40.1334,
-      "lng": -75.5329
+      "lat": 40.133768,
+      "lng": -75.453018
     },
     {
       "name": "Buffalo Wild Wings - Quakertown",
       "address": "1465 West Broad Street, Suite 29, Quakertown, PA 18951",
-      "lat": 40.441,
-      "lng": -75.3609
+      "lat": 40.446589,
+      "lng": -75.357856
     },
     {
       "name": "Buffalo Wild Wings - Scranton",
       "address": "100 Viewmont Mall, Suite 614, Scranton, PA 18508",
-      "lat": 41.4596,
-      "lng": -75.6555
+      "lat": 41.459388,
+      "lng": -75.653167
     },
     {
       "name": "Buffalo Wild Wings - Warrington",
       "address": "201 Easton Road #118, Warrington, PA 18976",
-      "lat": 40.2245,
-      "lng": -75.141
+      "lat": 40.216685,
+      "lng": -75.138838
     },
     {
       "name": "Buffalo Wild Wings - Whitehall",
       "address": "1225 Grape Street, Whitehall, PA 18052",
-      "lat": 40.6321,
-      "lng": -75.4877
+      "lat": 40.633532,
+      "lng": -75.482511
     },
     {
       "name": "Buffalo Wild Wings - Wilkes-Barre",
       "address": "319 Bear Creek Blvd, Wilkes-Barre, PA 18702",
-      "lat": 41.2444,
-      "lng": -75.8366
+      "lat": 41.246291,
+      "lng": -75.839131
     }
   ],
   "bwwNj": [
     {
       "name": "Buffalo Wild Wings - Princeton, NJ",
-      "address": "Princeton, NJ",
-      "lat": 40.3573,
-      "lng": -74.6672
+      "address": "3465 US-1, Princeton, NJ 08540",
+      "lat": 40.306261,
+      "lng": -74.669806
     },
     {
       "name": "Buffalo Wild Wings GO - Voorhees, NJ - Echelon Village",
       "address": "1120 White Horse Road, Voorhees, NJ 08043",
-      "lat": 39.8466,
-      "lng": -74.994
+      "lat": 39.850193,
+      "lng": -74.987806
     },
     {
       "name": "Buffalo Wild Wings - Watchung, NJ",
       "address": "1599 US Highway 22 West, Watchung, NJ 07069",
-      "lat": 40.637,
-      "lng": -74.4406
+      "lat": 40.643040,
+      "lng": -74.414516
     },
     {
       "name": "Buffalo Wild Wings GO - Sparta, NJ",
-      "address": "4 N Village Blvd STE A, Sparta, NJ",
-      "lat": 41.0334,
-      "lng": -74.6399
+      "address": "4 N Village Blvd STE A, Sparta, NJ 07871",
+      "lat": 41.075134,
+      "lng": -74.658695
     },
     {
       "name": "Buffalo Wild Wings - Flemington, NJ",
-      "address": "144 NJ-31 #100, Flemington, NJ 08822",
-      "lat": 40.521,
-      "lng": -74.8592
+      "address": "144 NJ-31, Flemington, NJ 08822",
+      "lat": 40.526198,
+      "lng": -74.854311
     },
     {
       "name": "Buffalo Wild Wings - Moorestown, NJ",
       "address": "1598 Nixon Dr, Moorestown, NJ 08054",
-      "lat": 39.9444,
-      "lng": -74.963
+      "lat": 39.9449927,
+      "lng": -74.9586174
     }
   ],
   "dunkin": [

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MP + BWW + Dunkin Map</title>
+    <title>People Capital Group Map</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -21,7 +21,7 @@
                 <i class="fas fa-triangle-exclamation"></i>
                 <b>Confidential - Authorized Access Only</b>
                 <p>This map contains proprietary business information belonging to People Capital Group. Unauthorized access, distribution, or reproduction is prohibited.</p>
-                <span>Access activity is monitored.</span>
+                <span id="gateIp">Access activity is monitored.</span>
             </div>
             <label for="accessToken">Access code</label>
             <div class="access-input-row">
@@ -39,7 +39,7 @@
                 <div class="brand-top">
                     <div>
                         <p class="eyebrow">Development Territory</p>
-                        <h1>MP + BWW + Dunkin</h1>
+                        <h1>PCG Map</h1>
                     </div>
                     <div class="brand-actions">
                         <button class="icon-btn" id="presentationToggle" onclick="togglePresentationView()" title="Presentation View"><i class="fas fa-expand"></i></button>
@@ -49,16 +49,10 @@
                 <details class="legend-details">
                     <summary>Legend</summary>
                     <div class="top-legend" aria-label="Map legend summary">
-                        <span><i class="fas fa-building" style="color:#2d58cf"></i> MP</span>
-                        <span><i class="fas fa-utensils" style="color:#dc2626"></i> PA BWW</span>
-                        <span><i class="fas fa-utensils" style="color:#c2410c"></i> NJ BWW</span>
-                        <span><i class="fas fa-mug-hot" style="color:#f97316"></i> Dunkin</span>
-                        <span><i class="fas fa-cake-candles" style="color:#db2777"></i> Dunkin / BR</span>
-                        <span><i class="fas fa-star" style="color:#c2410c"></i> GO</span>
-                        <span><i class="fas fa-map-pin" style="color:#16a34a"></i> Pinned</span>
-                        <span><i class="fas fa-draw-polygon" style="color:#d0a337"></i> PA / NJ counties</span>
-                        <span><i class="fas fa-circle" style="color:#1e3a8a"></i> MP radius</span>
-                        <span><i class="fas fa-circle" style="color:#16a34a"></i> Pin radius</span>
+                        <span><i class="fas fa-building"></i> MP</span>
+                        <span><i class="fas fa-utensils"></i> BWW</span>
+                        <span><i class="fas fa-mug-hot"></i> Dunkin</span>
+                        <span><i class="fas fa-map-pin"></i> Pinned</span>
                     </div>
                 </details>
             </section>
@@ -74,37 +68,26 @@
             </details>
 
             <details class="row tool-card">
-                <summary class="section-title"><i class="fas fa-search-location"></i><b>Search Location</b></summary>
+                <summary class="section-title"><i class="fas fa-search-location"></i><b>Location Tools</b></summary>
                 <label>Looking for</label>
                 <fieldset class="search-type-toggle" aria-label="Location type">
-                    <label><input type="radio" name="locationSearchType" value="All" checked onchange="applySearchLocationFilter()"> <span>All</span></label>
-                    <label><input type="radio" name="locationSearchType" value="MP" onchange="applySearchLocationFilter()"> <span>MP</span></label>
-                    <label><input type="radio" name="locationSearchType" value="BWW" onchange="applySearchLocationFilter()"> <span>BWW</span></label>
-                    <label><input type="radio" name="locationSearchType" value="Dunkin" onchange="applySearchLocationFilter()"> <span>Dunkin</span></label>
+                    <label><input type="radio" name="locationSearchType" value="MP" checked onchange="applySearchLocationFilter()"> <span><i class="fas fa-building"></i> MP</span></label>
+                    <label><input type="radio" name="locationSearchType" value="BWW" onchange="applySearchLocationFilter()"> <span><i class="fas fa-utensils"></i> BWW</span></label>
+                    <label><input type="radio" name="locationSearchType" value="Dunkin" onchange="applySearchLocationFilter()"> <span><i class="fas fa-mug-hot"></i> Dunkin</span></label>
                 </fieldset>
-                <label for="locationSearchText">Search by name, ID, or address</label>
-                <input id="locationSearchText" type="text" placeholder="Start typing..." oninput="applySearchLocationFilter()">
                 <label for="locationSearch">Matching locations</label>
-                <select id="locationSearch"></select>
+                <select id="locationSearch" onchange="previewSelectedLocation()"></select>
                 <div id="locationSearchSummary" class="hint"></div>
                 <button class="primary" onclick="jumpToLocation()"><i class="fas fa-location-crosshairs"></i> Jump To Location</button>
+                <hr>
+                <label>Address</label>
+                <input id="closestAddress" type="text" placeholder="Enter address...">
+                <button class="primary" onclick="findNearestLocations()"><i class="fas fa-search"></i> Find Nearest</button>
+                <div id="closestMPResult" class="result">Results will appear here.</div>
             </details>
 
             <details class="row tool-card">
-                <summary class="section-title"><i class="fas fa-draw-polygon"></i><b>Radius Tool</b></summary>
-                <label>MP territory</label>
-                <select id="radiusCenter"></select>
-                <div id="mpSummary" class="result">Select an MP to see territory details.</div>
-                <div class="radius-manual-controls">
-                    <label>Radius miles</label>
-                    <input id="radiusMiles" type="number" value="5" step="0.5">
-                    <button class="primary" onclick="drawRadius()">Draw / update radius</button>
-                    <button class="secondary" onclick="clearRadius()">Clear radius</button>
-                </div>
-            </details>
-
-            <details class="row tool-card">
-                <summary class="section-title"><i class="fas fa-route"></i><b>Drive Distance</b></summary>
+                <summary class="section-title"><i class="fas fa-route"></i><b>Routing & Distance</b></summary>
                 <label>Start</label>
                 <select id="from"></select>
                 <label>End</label>
@@ -114,50 +97,47 @@
                     <button class="secondary" onclick="clearRoute()"><i class="fas fa-xmark"></i> Clear</button>
                 </div>
                 <div id="routeResult" class="result">No route calculated yet.</div>
-            </details>
-
-            <details class="row tool-card">
-                <summary class="section-title"><i class="fas fa-location-arrow"></i><b>Address Route</b></summary>
-                <label>Start address</label>
-                <div class="autocomplete-container">
-                    <input id="startAddress" type="text" placeholder="Search PA/NJ address, ...">
-                    <div id="addressSuggestions" class="suggestions"></div>
-                </div>
-                <label>Destination</label>
+                <hr>
+                <label>From</label>
+                <input id="startAddress" type="text" placeholder="Starting address...">
+                <label>To</label>
                 <select id="addressTarget"></select>
-                <div class="button-row">
-                    <button class="primary" onclick="routeAddress()"><i class="fas fa-diamond-turn-right"></i> Route</button>
-                    <button class="secondary" onclick="clearRoute()"><i class="fas fa-xmark"></i> Clear</button>
-                </div>
-                <div id="addressRouteResult" class="result">No address route calculated yet.</div>
+                <button class="primary" onclick="routeAddress()"><i class="fas fa-route"></i> Get Route</button>
+                <div id="addressRouteResult" class="result">Route details will appear here.</div>
             </details>
 
             <details class="row tool-card">
-                <summary class="section-title"><i class="fas fa-crosshairs"></i><b>Nearest Locations</b></summary>
-                <label>Address to check</label>
-                <div class="autocomplete-container">
-                    <input id="closestAddress" type="text" placeholder="Search PA/NJ address, ...">
-                    <div id="closestAddressSuggestions" class="suggestions"></div>
+                <summary class="section-title"><i class="fas fa-draw-polygon"></i><b>Territory Tools</b></summary>
+                <label>MP territory</label>
+                <select id="radiusCenter"></select>
+                <div id="mpSummary" class="result">Select an MP to see territory details.</div>
+                <div class="radius-manual-controls">
+                    <label>Radius miles</label>
+                    <input id="radiusMiles" type="number" value="5" step="0.5">
+                    <button class="primary" onclick="drawRadius()">Draw / update radius</button>
+                    <button class="secondary" onclick="clearRadius()">Clear radius</button>
                 </div>
-                <button class="primary" onclick="findNearestLocations()"><i class="fas fa-magnifying-glass-location"></i> Find Nearest</button>
-                <div id="closestMPResult" class="result">No nearest locations calculated yet.</div>
+                <hr>
+                <label for="countySelect">County</label>
+                <select id="countySelect" onchange="focusCounty(this.value)">
+                    <option value="">County details will load with the map.</option>
+                </select>
+                <div id="countySummary" class="hint">Select a county to view details.</div>
+                <div id="countyDetailList" class="county-detail-list"></div>
             </details>
 
             <details class="row tool-card">
-                <summary class="section-title"><i class="fas fa-map-pin"></i><b>Pin Address</b></summary>
-                <label>Address to pin</label>
-                <div class="autocomplete-container">
-                    <input id="pinnedAddress" type="text" placeholder="Search PA/NJ address, ...">
-                    <div id="pinnedAddressSuggestions" class="suggestions"></div>
-                </div>
-                <label>Label / note</label>
-                <input id="pinnedAddressNote" type="text" placeholder="Optional note, ...">
-                <label>Radius miles</label>
-                <input id="pinnedAddressRadius" type="number" value="1" min="0" step="0.25">
-                <button class="primary" onclick="pinAddress()"><i class="fas fa-thumbtack"></i> Save Pin</button>
+                <summary class="section-title"><i class="fas fa-map-pin"></i><b>Pin Location</b></summary>
+                <label>Address</label>
+                <input id="pinnedAddress" type="text" placeholder="Enter address...">
+                <label>Note (optional)</label>
+                <input id="pinnedAddressNote" type="text" placeholder="Add a note...">
+                <label>Radius (miles)</label>
+                <input id="pinnedAddressRadius" type="number" value="0" step="0.5">
+                <button class="primary" onclick="pinAddress()"><i class="fas fa-thumbtack"></i> Pin</button>
+                <div id="pinResult" class="result">Results will appear here.</div>
                 <div class="pinned-addresses">
-                    <div class="mini-title">Pinned addresses</div>
-                    <div id="pinnedAddressesList" class="hint">No pinned addresses yet.</div>
+                    <div id="pinnedAddressesList" class="hint">No pinned locations yet.</div>
                 </div>
             </details>
 
@@ -167,7 +147,7 @@
             </details>
 
             <details class="row tool-card utility-hidden">
-                <summary class="section-title"><i class="fas fa-wand-magic-sparkles"></i><b>Coordinate Cleanup</b></summary>
+                <summary class="section-title"><i class="fas fa-wand-magic-sparkles"></i><b>Advanced Tools</b></summary>
                 <button class="secondary" onclick="geocodeBWW()"><i class="fas fa-rotate"></i> Refresh BWW Coordinates</button>
                 <div id="geoStatus" class="hint"></div>
             </details>
@@ -190,5 +170,17 @@
 
     <script src="data.js"></script>
     <script src="script.js"></script>
+    <script>
+        // Fetch IP for monitoring
+        (async()=>{
+          try{
+            const r=await fetch('https://api.ipify.org?format=json');
+            const d=await r.json();
+            document.getElementById('gateIp').textContent='Access activity is monitored. Your IP address has been logged: '+d.ip;
+          }catch(e){
+            document.getElementById('gateIp').textContent='Access activity is monitored. Your IP address has been logged: [recorded]';
+          }
+        })();
+    </script>
 </body>
 </html>

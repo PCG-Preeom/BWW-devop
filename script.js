@@ -9,7 +9,7 @@ let ALL_BWW = [];
 let ALL_DUNKIN = [];
 let ALL_DESTINATIONS = [];
 
-const ACCESS_TOKEN = 'PCG2026!';
+const ACCESS_TOKEN = 'People';
 let appInitialized = false;
 
 const BRAND_FILTERS = {
@@ -17,7 +17,7 @@ const BRAND_FILTERS = {
     BWW: true,
     Dunkin: true
 };
-let locationSearchType = 'All';
+let locationSearchType = 'MP';
 
 function normalizeLocationData(data) {
     const normalizeGroup = (items = []) => items
@@ -122,18 +122,6 @@ function locationSearchLabel(p) {
     if (p.type === 'MP') return `MP - ${p.id}`;
     return `${p.type} - ${name}`;
 }
-
-function locationSearchText(p) {
-    return [
-        p.id,
-        p.name,
-        p.type,
-        p.address,
-        p.city,
-        p.state,
-        p.zip
-    ].filter(Boolean).join(' ').toLowerCase();
-}
 if (!window.L) {
     const mapElement = document.getElementById('map');
     const filterSummary = document.getElementById('filterSummary');
@@ -148,7 +136,15 @@ if (!window.L) {
 }
 
 // Initialize the map centered on the area
-const map = L.map('map').setView([40.25, -75.05], 8);
+const map = L.map('map', {
+    wheelDebounceTime: 35,
+    wheelPxPerZoomLevel: 90,
+    zoomAnimation: true,
+    markerZoomAnimation: true,
+    fadeAnimation: true,
+    zoomSnap: 0.5,
+    zoomDelta: 0.5
+}).setView([40.25, -75.05], 8);
 
 const THEME_KEY = 'pcgMapTheme';
 const COUNTY_GEOJSON_URL = 'https://raw.githubusercontent.com/plotly/datasets/master/geojson-counties-fips.json';
@@ -173,8 +169,20 @@ const pinnedAddressCircles = [];
 let pinnedAddresses = [];
 const PINNED_ADDRESSES_KEY = 'bwwMapPinnedAddresses';
 let paCountyLayer = null;
+const countyLayerById = new Map();
 let mapCountySummaryEl = null;
-setupCountySummaryControl();
+let selectedCountyId = '';
+let mapIsAnimating = false;
+
+map.on('zoomstart movestart', () => {
+    mapIsAnimating = true;
+});
+
+map.on('zoomend moveend', () => {
+    setTimeout(() => {
+        mapIsAnimating = false;
+    }, 80);
+});
 
 function countyHasLocations(feature) {
     const counts = feature?.properties?.pcgCounts;
@@ -263,22 +271,44 @@ function countyState(feature) {
 
 function updateCountySummary(feature = null) {
     const out = document.getElementById('countySummary');
+    const detail = document.getElementById('countyDetailList');
+
+    if (!feature) {
+        const selectedLayer = selectedCountyId ? countyLayerById.get(selectedCountyId) : null;
+        if (selectedLayer?.feature) {
+            feature = selectedLayer.feature;
+        } else {
+            if (out) {
+                out.textContent = 'Select a county to view details.';
+            }
+            if (detail) {
+                detail.classList.remove('is-open');
+                detail.innerHTML = '';
+            }
+            return;
+        }
+    }
 
     if (!feature) {
         if (out) {
-            out.textContent = 'Hover a highlighted county to see location counts.';
+            out.textContent = 'Select a county to view details.';
         }
-        if (mapCountySummaryEl) {
-            mapCountySummaryEl.classList.remove('is-active');
-            mapCountySummaryEl.innerHTML = '';
+        if (detail) {
+            detail.classList.remove('is-open');
+            detail.innerHTML = '';
         }
         return;
     }
 
     const counts = feature.properties.pcgCounts;
-    const text = `${countyName(feature)} (${countyState(feature)}): ${counts.MP} MP, ${counts.BWW} BWW, ${counts.Dunkin} Dunkin.`;
+    const pinCount = pinnedItemsForCounty(feature).length;
+    const text = `${countyName(feature)} includes ${counts.MP} MP, ${counts.BWW} BWW, ${counts.Dunkin} Dunkin, and ${pinCount} pinned addresses.`;
     if (out) {
         out.textContent = text;
+    }
+    if (detail) {
+        detail.innerHTML = countyDetailHtml(feature);
+        detail.classList.add('is-open');
     }
     if (mapCountySummaryEl) {
         mapCountySummaryEl.innerHTML = `
@@ -300,6 +330,173 @@ function setupCountySummaryControl() {
     control.addTo(map);
 }
 
+function locationNamesForCounty(feature, brand) {
+    return ALL
+        .filter(p => brandOf(p) === brand && pointInFeature(p, feature))
+        .map(p => p.name || p.id);
+}
+
+function locationItemsForCounty(feature, brand) {
+    return ALL
+        .map((location, index) => ({ location, index }))
+        .filter(({ location }) => brandOf(location) === brand && pointInFeature(location, feature));
+}
+
+function pinnedItemsForCounty(feature) {
+    return pinnedAddresses
+        .map((pin, index) => ({ pin, index }))
+        .filter(({ pin }) => pointInFeature(pin, feature));
+}
+
+function countyDescription(feature) {
+    const parts = [];
+    const mp = locationNamesForCounty(feature, 'MP');
+    const bww = locationNamesForCounty(feature, 'BWW');
+    const dunkin = locationNamesForCounty(feature, 'Dunkin');
+
+    if (mp.length) parts.push(`MP: ${mp.join(', ')}`);
+    if (bww.length) parts.push(`BWW: ${bww.join(', ')}`);
+    if (dunkin.length) parts.push(`Dunkin: ${dunkin.join(', ')}`);
+
+    return parts.join(' | ');
+}
+
+function renderCountyList(features) {
+    const select = document.getElementById('countySelect');
+    if (!select) return;
+
+    if (!features.length) {
+        select.innerHTML = '<option value="">No counties found</option>';
+        return;
+    }
+
+    const sorted = [...features].sort((a, b) => countyName(a).localeCompare(countyName(b)));
+    select.innerHTML = '<option value="">Select a county...</option>' + sorted.map(feature => {
+        return `<option value="${escapeHtml(feature.id)}">${escapeHtml(countyName(feature))}</option>`;
+    }).join('');
+}
+
+function countyDetailHtml(feature) {
+    const counts = feature.properties.pcgCounts;
+    const pins = pinnedItemsForCounty(feature);
+    const buildSection = (label, iconCls, brand) => {
+        const items = locationItemsForCounty(feature, brand);
+        if (!items.length) return '';
+        return `
+            <div class="county-detail-section">
+                <div class="county-detail-heading"><i class="${iconCls}"></i>${escapeHtml(label)}</div>
+                ${items.map(({ location, index }) => `
+                    <button class="county-detail-item county-location-jump" type="button" onclick="jumpToCountyLocation(${index})">
+                        <span>${escapeHtml(location.name || location.id)}</span>
+                        <i class="fas fa-location-crosshairs"></i>
+                    </button>
+                `).join('')}
+            </div>
+        `;
+    };
+    const buildPinnedSection = () => {
+        if (!pins.length) return '';
+        return `
+            <div class="county-detail-section">
+                <div class="county-detail-heading"><i class="fas fa-map-pin"></i>Pinned Addresses</div>
+                ${pins.map(({ pin, index }) => `
+                    <button class="county-detail-item county-location-jump" type="button" onclick="jumpToPinnedLocation(${index})">
+                        <span>${escapeHtml(pin.note || pin.address)}</span>
+                        <i class="fas fa-location-crosshairs"></i>
+                    </button>
+                `).join('')}
+            </div>
+        `;
+    };
+
+    return `
+        <div class="county-detail-head">
+            <span class="county-list-state">${escapeHtml(countyState(feature))}</span>
+            <span class="county-list-title">${escapeHtml(countyName(feature))}</span>
+            <span class="county-count-strip">
+                <span>${counts.MP} MP</span>
+                <span>${counts.BWW} BWW</span>
+                <span>${counts.Dunkin} Dunkin</span>
+                <span>${pins.length} Pins</span>
+            </span>
+        </div>
+        ${buildSection('MP', 'fas fa-building', 'MP')}
+        ${buildSection('Buffalo Wild Wings', 'fas fa-utensils', 'BWW')}
+        ${buildSection('Dunkin', 'fas fa-mug-hot', 'Dunkin')}
+        ${buildPinnedSection()}
+    `;
+}
+
+function focusCounty(countyId) {
+    if (!countyId) {
+        selectedCountyId = '';
+        updateCountySummary();
+        return;
+    }
+
+    const layer = countyLayerById.get(String(countyId));
+    const feature = layer?.feature;
+    if (!layer || !feature) return;
+
+    selectedCountyId = String(countyId);
+    const select = document.getElementById('countySelect');
+    if (select) {
+        select.value = String(countyId);
+    }
+    updateCountySummary(feature);
+    closeCountyDetail();
+    map.fitBounds(layer.getBounds(), { padding: [48, 48] });
+}
+
+function jumpToCountyLocation(index) {
+    const location = ALL[index];
+    if (!location) return;
+
+    const locationSearch = document.getElementById('locationSearch');
+    if (locationSearch) {
+        locationSearch.value = String(index);
+    }
+
+    if (location.type === 'MP') {
+        const radiusCenter = document.getElementById('radiusCenter');
+        if (radiusCenter) {
+            radiusCenter.value = String(index);
+        }
+        updateRadiusMilesInput();
+        updateMPSummary();
+    }
+
+    centerLocation(index, true);
+    pulseLocationMarker(index);
+}
+
+function jumpToPinnedLocation(index) {
+    const pin = pinnedAddresses[index];
+    const marker = pinnedAddressMarkers[index];
+    if (!pin) return;
+
+    map.setView([pin.lat, pin.lng], 16, { animate: true });
+    setTimeout(() => {
+        marker?.openPopup();
+        map.panTo([pin.lat, pin.lng], { animate: true });
+    }, 260);
+
+    const markerElement = marker?.getElement();
+    if (markerElement) {
+        markerElement.classList.remove('location-marker-pulse');
+        void markerElement.offsetWidth;
+        markerElement.classList.add('location-marker-pulse');
+        setTimeout(() => markerElement.classList.remove('location-marker-pulse'), 1200);
+    }
+}
+
+function refreshSelectedCountySummary() {
+    const selectedLayer = selectedCountyId ? countyLayerById.get(selectedCountyId) : null;
+    if (selectedLayer?.feature) {
+        updateCountySummary(selectedLayer.feature);
+    }
+}
+
 function openCountyDetail(feature, bounds) {
     const panel    = document.getElementById('countyDetailPanel');
     const titleEl  = document.getElementById('cdpTitle');
@@ -313,14 +510,12 @@ function openCountyDetail(feature, bounds) {
     const dunkin = inCounty.filter(p => p.type.startsWith('Dunkin'));
 
     const stateFull = countyState(feature);
-    const stateAbbr = stateFull === 'Pennsylvania' ? 'PA' : 'NJ';
-
     badgeEl.textContent = stateFull;
     titleEl.textContent = countyName(feature);
 
     const buildSection = (label, iconCls, items) => {
         if (!items.length) return '';
-        const rows = items.map(p => `<div class="cdp-item">${escapeHtml(p.name)}</div>`).join('');
+        const rows = items.map(p => `<div class="cdp-item">${escapeHtml(p.name || p.id)}</div>`).join('');
         return `<div class="cdp-section"><div class="cdp-section-label"><i class="${iconCls}"></i> ${escapeHtml(label)}</div>${rows}</div>`;
     };
 
@@ -368,31 +563,49 @@ async function loadCountyHighlights() {
         if (paCountyLayer) {
             map.removeLayer(paCountyLayer);
         }
+        countyLayerById.clear();
+        renderCountyList(countyFeatures.features);
+        updateCountySummary();
 
         paCountyLayer = L.geoJSON(countyFeatures, {
             pane: 'countyPane',
+            interactive: true,
+            bubblingMouseEvents: false,
             style: countyStyle,
             onEachFeature: (feature, layer) => {
+                countyLayerById.set(String(feature.id), layer);
                 layer.on({
                     mouseover: () => {
+                        if (mapIsAnimating) return;
                         layer.setStyle(countyHoverStyle());
-                        layer.bringToFront();
                         updateCountySummary(feature);
                     },
                     mouseout: () => {
+                        if (mapIsAnimating) return;
                         paCountyLayer?.resetStyle(layer);
                         updateCountySummary();
                     },
-                    click: () => {
-                        openCountyDetail(feature, layer.getBounds());
+                    click: (event) => {
+                        L.DomEvent.stopPropagation(event);
+                        selectedCountyId = String(feature.id);
+                        const select = document.getElementById('countySelect');
+                        if (select) {
+                            select.value = selectedCountyId;
+                        }
+                        updateCountySummary(feature);
+                        closeCountyDetail();
                     }
                 });
             }
         }).addTo(map);
     } catch (e) {
         const filterSummary = document.getElementById('filterSummary');
+        const countySummary = document.getElementById('countySummary');
         if (filterSummary) {
             filterSummary.textContent = `${filterSummary.textContent} County boundaries could not load.`;
+        }
+        if (countySummary) {
+            countySummary.textContent = 'County details could not load.';
         }
     }
 }
@@ -473,7 +686,10 @@ function addMarkers() {
     ALL.forEach((p, i) => {
         if (!isVisibleLocation(p)) return;
 
-        const m = L.marker([p.lat, p.lng], { icon: icon(p) }).addTo(map).bindPopup(popup(p));
+        const m = L.marker([p.lat, p.lng], { icon: icon(p) }).addTo(map).bindPopup(popup(p), {
+            autoPan: false,
+            keepInView: false
+        });
         // When marker is clicked, select it for radius and route appropriately
         m.on('click', () => {
             const locationSearch = document.getElementById('locationSearch');
@@ -565,11 +781,9 @@ function fillLocationSearchSelect() {
     if (!locationSearch) return;
 
     const previousValue = locationSearch.value;
-    const query = (document.getElementById('locationSearchText')?.value || '').trim().toLowerCase();
     const matches = ALL
         .filter(isVisibleLocation)
-        .filter(p => locationSearchType === 'All' || brandOf(p) === locationSearchType)
-        .filter(p => !query || locationSearchText(p).includes(query));
+        .filter(p => brandOf(p) === locationSearchType);
 
     locationSearch.innerHTML = '';
     matches.forEach((p) => {
@@ -584,10 +798,9 @@ function fillLocationSearchSelect() {
     }
 
     if (summary) {
-        const typeLabel = locationSearchType === 'All' ? 'locations' : locationSearchType;
         summary.textContent = matches.length
-            ? `${matches.length} matching ${typeLabel}.`
-            : `No matching ${typeLabel}. Check the visible location filters above.`;
+            ? `${matches.length} matching ${locationSearchType}.`
+            : `No matching ${locationSearchType}. Check the visible location filters above.`;
     }
 
     if (button) {
@@ -596,7 +809,7 @@ function fillLocationSearchSelect() {
 }
 
 function applySearchLocationFilter() {
-    locationSearchType = document.querySelector('input[name="locationSearchType"]:checked')?.value || 'All';
+    locationSearchType = document.querySelector('input[name="locationSearchType"]:checked')?.value || 'MP';
     fillLocationSearchSelect();
 }
 
@@ -696,13 +909,44 @@ function updateMPSummary() {
     `;
 }
 
+function pulseLocationMarker(index) {
+    const markerElement = markers[index]?.getElement();
+    if (!markerElement) return;
+
+    markerElement.classList.remove('location-marker-pulse');
+    void markerElement.offsetWidth;
+    markerElement.classList.add('location-marker-pulse');
+    setTimeout(() => markerElement.classList.remove('location-marker-pulse'), 1200);
+}
+
+function centerLocation(index, openPopup = false) {
+    const p = ALL[index];
+    if (!p) return;
+
+    map.setView([p.lat, p.lng], 16, { animate: true });
+
+    if (openPopup) {
+        setTimeout(() => {
+            markers[index]?.openPopup();
+            map.panTo([p.lat, p.lng], { animate: true });
+        }, 260);
+    }
+}
+
+function previewSelectedLocation() {
+    const index = +document.getElementById('locationSearch').value;
+    if (!ALL[index]) return;
+    centerLocation(index);
+    pulseLocationMarker(index);
+}
+
 function jumpToLocation() {
     const index = +document.getElementById('locationSearch').value;
     const p = ALL[index];
     if (!p) return;
 
-    map.setView([p.lat, p.lng], Math.max(map.getZoom(), 13));
-    markers[index]?.openPopup();
+    centerLocation(index, true);
+    pulseLocationMarker(index);
 
     if (p.type === 'MP') {
         document.getElementById('radiusCenter').value = index;
@@ -725,6 +969,13 @@ function togglePresentationView() {
 }
 
 function setDarkMode(enabled, persist = true) {
+    if (persist) {
+        document.body.classList.remove('theme-changing');
+        void document.body.offsetWidth;
+        document.body.classList.add('theme-changing');
+        setTimeout(() => document.body.classList.remove('theme-changing'), 700);
+    }
+
     document.body.classList.toggle('dark-mode', enabled);
 
     if (activeTiles) {
@@ -902,13 +1153,15 @@ function renderPinnedAddresses() {
         `);
         pinnedAddressMarkers.push(marker);
     });
+
+    refreshSelectedCountySummary();
 }
 
 async function pinAddress() {
     const addressInput = document.getElementById('pinnedAddress');
     const noteInput = document.getElementById('pinnedAddressNote');
     const radiusInput = document.getElementById('pinnedAddressRadius');
-    const out = document.getElementById('addressRouteResult');
+    const out = document.getElementById('pinResult');
     const address = addressInput.value.trim();
     const note = noteInput.value.trim();
     const radiusMiles = parseFloat(radiusInput.value);
@@ -1142,8 +1395,7 @@ document.getElementById('radiusCenter').addEventListener('change', () => {
     const p = ALL[selectedIndex];
     if (!p) return;
 
-    map.setView([p.lat, p.lng], Math.max(map.getZoom(), 13));
-    markers[selectedIndex]?.openPopup();
+    centerLocation(selectedIndex, true);
 });
 
 // Autocomplete for address inputs, biased toward PA/NJ while staying inside the US.
