@@ -279,319 +279,364 @@ window.PCG_LOCATION_DATA = {
     {
       "id": "339616",
       "address": "1630 W Wadsworth Ave, Philadelphia, PA 19150",
+      "propertyName": "Wadsworth",
       "region": "Philadelphia",
-      "lat": 40.0777,
-      "lng": -75.1752
+      "lat": 40.081249,
+      "lng": -75.171300
     },
     {
       "id": "336372",
       "address": "2 Township Line Rd, Elkins Park, PA 19027",
+      "propertyName": "Elkins Park",
       "region": "Montgomery County",
-      "lat": 40.078,
-      "lng": -75.128
+      "lat": 40.070214,
+      "lng": -75.099080
     },
     {
       "id": "345986",
       "address": "3170 Willits Rd, Philadelphia, PA 19136",
+      "propertyName": "Willits",
       "region": "Philadelphia",
-      "lat": 40.0569,
-      "lng": -75.0141
+      "lat": 40.056869,
+      "lng": -75.014123
     },
     {
       "id": "340794",
       "address": "6190 North Front St, Philadelphia, PA 19120",
+      "propertyName": "Front",
       "region": "Philadelphia",
-      "lat": 40.0438,
-      "lng": -75.1195
+      "lat": 40.044790,
+      "lng": -75.118878
     },
     {
       "id": "345489",
       "address": "5801 Oxford Ave, Philadelphia, PA 19149",
+      "propertyName": "Oxford",
       "region": "Philadelphia",
-      "lat": 40.0324,
-      "lng": -75.0854
+      "lat": 40.032469,
+      "lng": -75.085374
     },
     {
       "id": "351099",
       "address": "15 Bustleton Pike, Feasterville, PA 19053",
+      "propertyName": "Sonic",
       "region": "Bucks County",
-      "lat": 40.1379,
-      "lng": -75.0075
+      "lat": 40.149309,
+      "lng": -74.999263
     },
     {
       "id": "351259",
       "address": "1069 W County Line Rd, Warminster, PA 18974",
+      "propertyName": "Rosemore",
       "region": "Bucks County",
-      "lat": 40.201,
-      "lng": -75.1214
+      "lat":  40.189415,
+      "lng": -75.102678
     },
     {
       "id": "302642",
       "address": "2112 County Line Rd, Huntingdon Valley, PA 19006",
+      "propertyName": "County Line",
       "region": "Bucks County",
-      "lat": 40.1708,
-      "lng": -75.0717
+      "lat": 40.170849,
+      "lng": -75.071724
     },
     {
       "id": "352894",
       "address": "110 E Street Rd, Feasterville, PA 19053",
+      "propertyName": "Street Rd",
       "region": "Bucks County",
-      "lat": 40.1493,
-      "lng": -74.9993,
+      "lat": 40.149306,
+      "lng": -74.999243,
       "combo": true
     },
     {
       "id": "341350",
       "address": "1050 Stoney Hill Rd, Yardley, PA 19067",
+      "propertyName": "Yardley",
       "region": "Bucks County",
-      "lat": 40.235,
-      "lng": -74.85
+      "lat": 40.232895,
+      "lng": -74.884906
     },
     {
       "id": "337839",
       "address": "334 Easton Rd, Warrington, PA 18976",
+      "propertyName": "Warrington",
       "region": "Bucks County",
-      "lat": 40.2221,
-      "lng": -75.1404
+      "lat":  40.222060,
+      "lng": -75.140448
     },
     {
       "id": "330338",
       "address": "5060 Township Line Rd, Drexel Hill, PA 19026",
+      "propertyName": "Drexel Hill",
       "region": "Delaware County",
-      "lat": 39.9538,
-      "lng": -75.3227
+      "lat": 39.953809,
+      "lng": -75.322703
     },
     {
       "id": "337063",
       "address": "1100 Chester Pike, Sharon Hill, PA 19079",
+      "propertyName": "Sharon Hill",
       "region": "Delaware County",
-      "lat": 39.9094,
-      "lng": -75.2732
+      "lat": 39.909421,
+      "lng": -75.273140
     },
     {
       "id": "343832",
       "address": "23 E Baltimore Ave, Lansdowne, PA 19050",
+      "propertyName": "Lansdowne",
       "region": "Delaware County",
-      "lat": 39.9387,
-      "lng": -75.2712
+      "lat": 39.938718 ,
+      "lng": -75.271156
     },
     {
       "id": "304669",
       "address": "5 Macdade Blvd, Collingdale, PA 19023",
+      "propertyName": "Collingdale",
       "region": "Delaware County",
-      "lat": 39.9172,
-      "lng": -75.2652
+      "lat": 39.918152,
+      "lng": -75.265264
     },
     {
       "id": "355146",
       "address": "901 Market St, Philadelphia, PA 19107",
+      "propertyName": "Gallery",
       "region": "Philadelphia",
-      "lat": 39.9514,
-      "lng": -75.1553
+      "lat": 39.951976 ,
+      "lng": -75.155699
     },
     {
       "id": "300496",
       "address": "7000 Chester Ave, Philadelphia, PA 19142",
+      "propertyName": "Cobbs Creek",
       "region": "Philadelphia",
-      "lat": 39.9236,
-      "lng": -75.2453
+      "lat": 39.923575,
+      "lng": -75.245259
     },
     {
       "id": "341167",
       "address": "4017 N 5th St, Philadelphia, PA 19140",
+      "propertyName": "5th Street",
       "region": "Philadelphia",
-      "lat": 40.0134,
-      "lng": -75.1348
+      "lat": 40.012496,
+      "lng": -75.135535
     },
     {
       "id": "340870",
       "address": "221 W Hunting Park Ave, Philadelphia, PA 19140",
+      "propertyName": "Hunting Park",
       "region": "Philadelphia",
-      "lat": 40.0147,
-      "lng": -75.1304
+      "lat": 40.014676 ,
+      "lng": -75.130366
     },
     {
       "id": "335981",
       "address": "532 W Lehigh Ave, Philadelphia, PA 19133",
+      "propertyName": "Lehigh",
       "region": "Philadelphia",
-      "lat": 39.9921,
-      "lng": -75.1418
+      "lat": 39.992072 ,
+      "lng": -75.141829
     },
     {
       "id": "353150",
       "address": "2749 W Hunting Park Ave, Philadelphia, PA 19129",
+      "propertyName": "Bakers Square",
       "region": "Philadelphia",
-      "lat": 40.0077,
-      "lng": -75.1744
+      "lat": 40.007677,
+      "lng": -75.174439
     },
     {
       "id": "351050",
       "address": "2145 W Allegheny Ave, Philadelphia, PA 19132",
+      "propertyName": "Allegheny",
       "region": "Philadelphia",
-      "lat": 40.0035,
-      "lng": -75.1656
+      "lat": 40.003525,
+      "lng": -75.165597
     },
     {
       "id": "345985",
       "address": "5051 Wissahickon Ave, Philadelphia, PA 19144",
+      "propertyName": "Wissahickon",
       "region": "Philadelphia",
-      "lat": 40.0199,
-      "lng": -75.1744
+      "lat": 40.019930,
+      "lng": -75.174425
     },
     {
       "id": "356374",
       "address": "738 Bethlehem Pike, Montgomeryville, PA 18936",
+      "propertyName": "Montgomeryville",
       "region": "Montgomery County",
-      "lat": 40.2457,
-      "lng": -75.2441
+      "lat": 40.245704,
+      "lng": -75.244083
     },
     {
       "id": "353843",
       "address": "1110 West End Blvd, Quakertown, PA 18951",
+      "propertyName": "Quakertown Donuts",
       "region": "Bucks County",
-      "lat": 40.4167,
-      "lng": -75.3442
+      "lat": 40.416687,
+      "lng": -75.344213
     },
     {
       "id": "353047",
       "address": "103 South Baringer Ave, Silverdale, PA 18962",
+      "propertyName": "Silverdale",
       "region": "Bucks County",
-      "lat": 40.3476,
-      "lng": -75.271
+      "lat": 40.349092,
+      "lng": -75.269717
     },
     {
       "id": "340538",
       "address": "4460 Easton Ave, Bethlehem, PA 18015",
+      "propertyName": "Easton",
       "region": "Northampton County",
-      "lat": 40.666,
-      "lng": -75.3079
+      "lat": 40.666038,
+      "lng": -75.307854
     },
     {
       "id": "343079",
       "address": "376 W Uwchlan Ave, Downingtown, PA 19335",
+      "propertyName": "DD-BR Uwchlan / DD Downingtown",
       "region": "Chester County",
-      "lat": 40.0324,
-      "lng": -75.6777,
+      "lat": 40.032378,
+      "lng": -75.677731,
       "combo": true
     },
     {
       "id": "342144",
       "address": "750 Miles Rd, West Chester, PA 19380",
+      "propertyName": "DD Miles / DD Westchester",
       "region": "Chester County",
-      "lat": 39.9636,
-      "lng": -75.6277
+      "lat": 39.963624,
+      "lng": -75.627727
     },
     {
       "id": "364295",
       "address": "80 E Uwchlan Ave, Exton, PA 19341",
+      "propertyName": "Lionville",
       "region": "Chester County",
-      "lat": 40.028,
-      "lng": -75.62
+      "lat": 40.059648,
+      "lng": -75.653530
     },
     {
       "id": "365361",
       "address": "2301 Welsh Rd, Philadelphia, PA 19114",
+      "propertyName": "Welsh",
       "region": "Philadelphia",
-      "lat": 40.0741,
-      "lng": -75.0346
+      "lat": 40.072938,
+      "lng": -75.033259
     },
     {
       "id": "310382",
       "address": "1619 Grant Ave, Philadelphia, PA 19115",
+      "propertyName": "Grant",
       "region": "Philadelphia",
-      "lat": 40.0863,
-      "lng": -75.038
+      "lat": 40.087355,
+      "lng": -75.040006
     },
     {
       "id": "332941",
       "address": "9834 Bustleton Ave, Philadelphia, PA 19115",
+      "propertyName": "Bustleton",
       "region": "Philadelphia",
-      "lat": 40.0931,
-      "lng": -75.032
+      "lat":  40.093137,
+      "lng": -75.032043
     },
     {
       "id": "343497",
       "address": "842 Red Lion Rd, Philadelphia, PA 19115",
+      "propertyName": "Red Lion",
       "region": "Philadelphia",
-      "lat": 40.1031,
-      "lng": -75.0302
+      "lat": 40.103057,
+      "lng": -75.030210
     },
     {
       "id": "302446",
       "address": "10050 Roosevelt Blvd, Philadelphia, PA 19116",
+      "propertyName": "Little Red Lion",
       "region": "Philadelphia",
-      "lat": 40.0958,
-      "lng": -75.0153
+      "lat": 40.095737,
+      "lng": -75.015011
     },
     {
       "id": "337079",
       "address": "2998 A Welsh Rd, Philadelphia, PA 19152",
+      "propertyName": "Holme Circle",
       "region": "Philadelphia",
-      "lat": 40.0735,
-      "lng": -75.0341
+      "lat": 40.057981,
+      "lng": -75.029172
     },
     {
       "id": "304863",
       "address": "2654 S 18th St, Philadelphia, PA 19145",
+      "propertyName": "18th St",
       "region": "Philadelphia",
-      "lat": 39.918,
-      "lng": -75.178
+      "lat": 39.918029 ,
+      "lng": -75.177867
     },
     {
       "id": "354561",
       "address": "2640 S Carlisle St, Philadelphia, PA 19145",
+      "propertyName": "Carlisle",
       "region": "Philadelphia",
-      "lat": 39.9173,
-      "lng": -75.1726
+      "lat": 39.917340 ,
+      "lng": -75.172555
     },
     {
       "id": "332393",
       "address": "7601 Lindbergh Blvd, Philadelphia, PA 19153",
+      "propertyName": "Lindbergh",
       "region": "Philadelphia",
-      "lat": 39.9049,
-      "lng": -75.2384
+      "lat": 39.904873,
+      "lng": -75.238370
     },
     {
       "id": "358933",
       "address": "1402 Brace Rd, Cherry Hill, NJ 08034",
+      "propertyName": "Brace Rd",
       "region": "Camden County, NJ",
-      "lat": 39.8911,
-      "lng": -75.0186
+      "lat": 39.891063,
+      "lng": -75.018607
     },
     {
       "id": "354865",
       "address": "224 W Broad St, Quakertown, PA 18951",
+      "propertyName": "Quakertown",
       "region": "Bucks County",
-      "lat": 40.4409,
-      "lng": -75.3362
+      "lat": 39.891063 ,
+      "lng": -75.018607
     },
     {
       "id": "353689",
       "address": "520 Pennsylvania Ave, Fort Washington, PA 19034",
+      "propertyName": "Fort Washington",
       "region": "Montgomery County",
-      "lat": 40.134,
-      "lng": -75.206
+      "lat": 40.133440,
+      "lng": -75.205910
     },
     {
       "id": "342184",
       "address": "549 Doylestown Rd, Lansdale, PA 19445",
+      "propertyName": "Lansdale",
       "region": "Montgomery County",
-      "lat": 40.2651,
-      "lng": -75.2282
+      "lat": 40.265063 ,
+      "lng": -75.228189
     },
     {
       "id": "356316",
       "address": "2054 Red Lion Rd, Philadelphia, PA 19115",
+      "propertyName": "Star Alliance",
       "region": "Philadelphia",
-      "lat": 40.0982,
-      "lng": -75.0214
+      "lat": 40.099647,
+      "lng": -75.023782
     },
     {
       "id": "364412",
       "address": "8200 Roosevelt Blvd, Philadelphia, PA 19152",
+      "propertyName": "8200",
       "region": "Philadelphia",
-      "lat": 40.0603,
-      "lng": -75.0453
+      "lat":  40.060199,
+      "lng": -75.045759
     }
   ]
 };

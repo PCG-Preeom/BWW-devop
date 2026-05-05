@@ -33,7 +33,12 @@ function normalizeLocationData(data) {
         ...MP.map(x => ({ ...x, type: 'MP', color: '#1e3a8a' })),
         ...BWW_PA.map(x => ({ ...x, type: 'BWW PA', color: '#dc2626' })),
         ...BWW_NJ.map(x => ({ ...x, type: 'BWW NJ', color: '#c2410c' })),
-        ...DUNKIN.map(x => ({ ...x, name: `Dunkin #${x.id}`, type: x.combo ? 'Dunkin / Baskin-Robbins' : 'Dunkin', color: x.combo ? '#db2777' : '#f97316' }))
+        ...DUNKIN.map(x => ({
+            ...x,
+            name: `${x.combo ? 'Dunkin / Baskin-Robbins' : 'Dunkin'} #${x.id}${x.propertyName ? ` (${x.propertyName})` : ''}`,
+            type: x.combo ? 'Dunkin / Baskin-Robbins' : 'Dunkin',
+            color: x.combo ? '#db2777' : '#f97316'
+        }))
     ];
 
     ALL_MP = ALL.filter(p => p.type === 'MP');
@@ -120,6 +125,7 @@ function visibleLocations() {
 function locationSearchLabel(p) {
     const name = p.name || p.id || 'Unnamed location';
     if (p.type === 'MP') return `MP - ${p.id}`;
+    if (p.type.startsWith('Dunkin') && name.startsWith('Dunkin')) return name;
     return `${p.type} - ${name}`;
 }
 if (!window.L) {
@@ -736,7 +742,7 @@ function fillSelects() {
         const option = document.createElement('option');
         const globalIndex = ALL.indexOf(p);
         option.value = globalIndex;
-        option.textContent = `${p.type} - ${p.name}`;
+        option.textContent = locationSearchLabel(p);
         toSelect.appendChild(option);
     });
 
@@ -745,7 +751,7 @@ function fillSelects() {
     ALL.filter(isVisibleLocation).forEach((p) => {
         const option = document.createElement('option');
         option.value = ALL.indexOf(p);
-        option.textContent = `${p.type} - ${p.name || p.id}`;
+        option.textContent = locationSearchLabel(p);
         addressTarget.appendChild(option);
     });
 
