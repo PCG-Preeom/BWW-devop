@@ -48,16 +48,23 @@ function normalizeLocationData(data) {
 }
 
 async function loadLocationData() {
+    // Try Supabase via Netlify function
+    try {
+        const res = await fetch('/.netlify/functions/locations');
+        if (res.ok) {
+            normalizeLocationData(await res.json());
+            return true;
+        }
+    } catch {}
+
+    // Fallback: static files
     if (window.PCG_LOCATION_DATA) {
         normalizeLocationData(window.PCG_LOCATION_DATA);
         return true;
     }
 
     const response = await fetch('data.json', { cache: 'no-store' });
-    if (!response.ok) {
-        throw new Error('Unable to load location data.');
-    }
-
+    if (!response.ok) throw new Error('Unable to load location data.');
     normalizeLocationData(await response.json());
     return true;
 }
@@ -65,9 +72,41 @@ async function loadLocationData() {
 function unlockMap() {
     if (appInitialized) return;
     appInitialized = true;
-    document.body.classList.remove('auth-locked');
-    initializeApp();
-    setTimeout(() => map.invalidateSize(), 250);
+
+    const submitBtn = document.querySelector('#accessForm button[type="submit"]');
+    const rect = submitBtn
+        ? submitBtn.getBoundingClientRect()
+        : { left: window.innerWidth / 2, top: window.innerHeight / 2, width: 0, height: 0 };
+    const cx = Math.round(rect.left + rect.width / 2);
+    const cy = Math.round(rect.top + rect.height / 2);
+
+    // Spawn particles only — no ripple overlay during unlock
+    const colors = ['#FF671F', '#FFD700', '#ff9055', '#FFB347', '#ffffff'];
+    for (let i = 0; i < 18; i++) {
+        const p = document.createElement('div');
+        p.className = 'theme-particle';
+        const angle = (i / 18) * Math.PI * 2;
+        const dist = 60 + Math.random() * 100;
+        p.style.left = (cx - 3) + 'px';
+        p.style.top  = (cy - 3) + 'px';
+        p.style.setProperty('--px', Math.cos(angle) * dist + 'px');
+        p.style.setProperty('--py', Math.sin(angle) * dist + 'px');
+        p.style.background = colors[i % colors.length];
+        const size = (4 + Math.random() * 6) + 'px';
+        p.style.width  = size;
+        p.style.height = size;
+        p.style.animationDelay = (Math.random() * 0.1) + 's';
+        document.body.appendChild(p);
+        setTimeout(() => p.remove(), 800);
+    }
+
+    document.body.classList.add('access-exiting');
+
+    setTimeout(() => {
+        document.body.classList.remove('auth-locked', 'access-exiting');
+        initializeApp();
+        setTimeout(() => map.invalidateSize(), 250);
+    }, 500);
 }
 
 function logAccessAttempt(success) {
@@ -88,11 +127,31 @@ function setupAccessPrompt() {
     const form = document.getElementById('accessForm');
     const input = document.getElementById('accessToken');
     const message = document.getElementById('accessMessage');
+    const submitBtn = form?.querySelector('button[type="submit"]');
 
     input?.focus();
-    form?.addEventListener('submit', (event) => {
+    form?.addEventListener('submit', async (event) => {
         event.preventDefault();
-        const success = (input?.value || '').trim() === ACCESS_TOKEN;
+        const token = (input?.value || '').trim();
+        if (!token) return;
+
+        if (submitBtn) submitBtn.disabled = true;
+        if (message) message.textContent = '';
+
+        let success = false;
+        try {
+            const res = await fetch('/.netlify/functions/verify-token', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ token }),
+            });
+            const data = await res.json();
+            success = data.success === true;
+        } catch {
+            // If function is unreachable, fall back to local check
+            success = token === ACCESS_TOKEN;
+        }
+
         logAccessAttempt(success);
 
         if (success) {
@@ -100,9 +159,8 @@ function setupAccessPrompt() {
             return;
         }
 
-        if (message) {
-            message.textContent = 'Invalid access code.';
-        }
+        if (submitBtn) submitBtn.disabled = false;
+        if (message) message.textContent = 'Invalid access code.';
         input?.select();
     });
 }
@@ -974,16 +1032,53 @@ function togglePresentationView() {
     setTimeout(() => map.invalidateSize(), 250);
 }
 
-function setDarkMode(enabled, persist = true) {
-    if (persist) {
-        document.body.classList.remove('theme-changing');
-        void document.body.offsetWidth;
-        document.body.classList.add('theme-changing');
-        setTimeout(() => document.body.classList.remove('theme-changing'), 700);
+function spawnThemeFX(cx, cy, newDark) {
+    const colors = ['#FF671F', '#FFD700', '#ff9055', '#FFB347', '#ffffff'];
+    for (let i = 0; i < 18; i++) {
+        const p = document.createElement('div');
+        p.className = 'theme-particle';
+        const angle = (i / 18) * Math.PI * 2;
+        const dist = 60 + Math.random() * 100;
+        p.style.left = (cx - 3) + 'px';
+        p.style.top  = (cy - 3) + 'px';
+        p.style.setProperty('--px', Math.cos(angle) * dist + 'px');
+        p.style.setProperty('--py', Math.sin(angle) * dist + 'px');
+        p.style.background = colors[i % colors.length];
+        const size = (4 + Math.random() * 6) + 'px';
+        p.style.width  = size;
+        p.style.height = size;
+        p.style.animationDelay = (Math.random() * 0.1) + 's';
+        document.body.appendChild(p);
+        setTimeout(() => p.remove(), 800);
     }
 
-    document.body.classList.toggle('dark-mode', enabled);
+    const overlay = document.createElement('div');
+    overlay.className = 'theme-ripple';
+    overlay.style.background = newDark ? '#0f0f0f' : '#f0ede8';
+    overlay.style.setProperty('--rx', cx + 'px');
+    overlay.style.setProperty('--ry', cy + 'px');
+    document.body.appendChild(overlay);
+    return overlay;
+}
 
+function setDarkMode(enabled, persist = true, origin = null) {
+    if (persist && origin) {
+        const rect = origin.getBoundingClientRect();
+        const cx = Math.round(rect.left + rect.width / 2);
+        const cy = Math.round(rect.top + rect.height / 2);
+        const overlay = spawnThemeFX(cx, cy, enabled);
+        setTimeout(() => {
+            document.body.classList.toggle('dark-mode', enabled);
+            applyDarkModeState(enabled, persist);
+            setTimeout(() => overlay.remove(), 400);
+        }, 320);
+    } else {
+        document.body.classList.toggle('dark-mode', enabled);
+        applyDarkModeState(enabled, persist);
+    }
+}
+
+function applyDarkModeState(enabled, persist) {
     if (activeTiles) {
         map.removeLayer(activeTiles);
     }
@@ -993,13 +1088,12 @@ function setDarkMode(enabled, persist = true) {
         paCountyLayer.setStyle(countyStyle);
     }
 
-    const button = document.getElementById('themeToggle');
-    if (button) {
-        button.innerHTML = enabled
-            ? '<i class="fas fa-sun"></i>'
-            : '<i class="fas fa-moon"></i>';
-        button.title = enabled ? 'Switch to Light Mode' : 'Switch to Dark Mode';
-    }
+    const icon = enabled ? '<i class="fas fa-sun"></i>' : '<i class="fas fa-moon"></i>';
+    const title = enabled ? 'Switch to Light Mode' : 'Switch to Dark Mode';
+    ['themeToggle', 'accessThemeToggle'].forEach(id => {
+        const btn = document.getElementById(id);
+        if (btn) { btn.innerHTML = icon; btn.title = title; }
+    });
 
     if (persist) {
         localStorage.setItem(THEME_KEY, enabled ? 'dark' : 'light');
@@ -1007,7 +1101,8 @@ function setDarkMode(enabled, persist = true) {
 }
 
 function toggleDarkMode() {
-    setDarkMode(!document.body.classList.contains('dark-mode'));
+    const button = document.getElementById('themeToggle') || document.getElementById('accessThemeToggle');
+    setDarkMode(!document.body.classList.contains('dark-mode'), true, button);
 }
 
 function drawAllMPRadii() {

@@ -1,2 +1,5 @@
 .vscode/
 logs/
+
+# Local Netlify folder
+.netlify

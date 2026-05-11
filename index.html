@@ -6,12 +6,15 @@
     <title>People Capital Group Map</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Manrope:wght@400;500;600;700;800&family=Sora:wght@500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Raleway:wght@600;700;800;900&family=Source+Sans+3:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 </head>
 <body class="auth-locked">
     <section class="access-screen" aria-label="Access prompt">
+        <button class="access-theme-btn" id="accessThemeToggle" onclick="toggleDarkMode()" title="Toggle Dark Mode" type="button">
+            <i class="fas fa-moon"></i>
+        </button>
         <form class="access-panel" id="accessForm">
             <div class="pcg-logo" aria-hidden="true">
                 <img src="unnamed.png" alt="">
@@ -37,7 +40,8 @@
         <aside id="panel" aria-label="Map tools">
             <section class="side-brand">
                 <div class="brand-top">
-                    <div>
+                    <img src="icon-512.png" alt="PCG Logo" class="brand-logo">
+                    <div class="brand-text">
                         <p class="eyebrow">Development Territory</p>
                         <h1>PCG Map</h1>
                     </div>
@@ -57,16 +61,7 @@
                 </details>
             </section>
 
-            <details class="row tool-card" open>
-                <summary class="section-title"><i class="fas fa-filter"></i><b>Visible Locations</b></summary>
-                <div class="filter-grid" aria-label="Location filters">
-                    <label class="filter-option"><input id="filterMP" type="checkbox" checked onchange="applyLocationFilters()"> MP</label>
-                    <label class="filter-option"><input id="filterBWW" type="checkbox" checked onchange="applyLocationFilters()"> BWW</label>
-                    <label class="filter-option"><input id="filterDunkin" type="checkbox" checked onchange="applyLocationFilters()"> Dunkin</label>
-                </div>
-                <div id="filterSummary" class="hint"></div>
-            </details>
-
+            <div class="panel-scroll">
             <details class="row tool-card">
                 <summary class="section-title"><i class="fas fa-search-location"></i><b>Location Tools</b></summary>
                 <label>Looking for</label>
@@ -151,6 +146,17 @@
                 <button class="secondary" onclick="geocodeBWW()"><i class="fas fa-rotate"></i> Refresh BWW Coordinates</button>
                 <div id="geoStatus" class="hint"></div>
             </details>
+            </div>
+
+            <div class="panel-footer">
+                <div class="version-badge">v1.6</div>
+                <div class="map-filter-checks" aria-label="Location filters">
+                    <label class="map-filter-check"><input id="filterMP" type="checkbox" checked onchange="applyLocationFilters()"> MP</label>
+                    <label class="map-filter-check"><input id="filterBWW" type="checkbox" checked onchange="applyLocationFilters()"> BWW</label>
+                    <label class="map-filter-check"><input id="filterDunkin" type="checkbox" checked onchange="applyLocationFilters()"> Dunkin</label>
+                </div>
+                <div id="filterSummary" class="panel-footer-count"></div>
+            </div>
         </aside>
 
         <section id="map" aria-label="Interactive map"></section>
