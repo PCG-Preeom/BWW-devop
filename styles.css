@@ -229,6 +229,118 @@ body.auth-locked .access-input-row button {
     accent-color: #d0a337;
 }
 
+.admin-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 3000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.6);
+}
+
+.admin-overlay[hidden] {
+    display: none;
+}
+
+.admin-panel {
+    width: min(720px, 92vw);
+    max-height: 85vh;
+    overflow-y: auto;
+    background: var(--bg);
+    color: var(--text);
+    border: 1px solid #d0a337;
+    border-radius: 10px;
+    padding: 20px 24px 24px;
+}
+
+.admin-panel-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+}
+
+.admin-panel-header h2 {
+    margin: 0;
+    font-size: 18px;
+    letter-spacing: 0.5px;
+}
+
+.admin-create-form {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 8px;
+}
+
+.admin-create-form input,
+.admin-create-form select {
+    flex: 1 1 140px;
+    padding: 8px 10px;
+    border-radius: 6px;
+    border: 1px solid rgba(128, 128, 128, 0.4);
+    background: var(--panel);
+    color: var(--text);
+}
+
+.admin-create-form button {
+    padding: 8px 16px;
+    border: 0;
+    border-radius: 6px;
+    background: #d0a337;
+    color: #05070b;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.admin-form-message {
+    min-height: 18px;
+    margin-bottom: 12px;
+    font-size: 12px;
+    font-weight: 700;
+    color: #f87171;
+}
+
+.admin-users-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+}
+
+.admin-users-table th,
+.admin-users-table td {
+    text-align: left;
+    padding: 8px 6px;
+    border-bottom: 1px solid rgba(128, 128, 128, 0.25);
+}
+
+.admin-users-table button {
+    margin-right: 6px;
+    padding: 4px 10px;
+    border-radius: 5px;
+    border: 1px solid rgba(128, 128, 128, 0.4);
+    background: transparent;
+    color: var(--text);
+    cursor: pointer;
+    font-size: 12px;
+}
+
+.admin-users-table button.danger {
+    border-color: #f87171;
+    color: #f87171;
+}
+
+.admin-status-active {
+    color: #4ade80;
+    font-weight: 700;
+}
+
+.admin-status-disabled {
+    color: #f87171;
+    font-weight: 700;
+}
+
 .access-theme-btn {
     position: absolute;
     top: 20px;

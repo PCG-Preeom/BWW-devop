@@ -34,6 +34,9 @@ function lockApp(reason) {
     appInitialized = false;
     clearTimeout(inactivityTimer);
     setSession(null);
+    closeAdminPanel();
+    const adminToggle = document.getElementById('adminToggle');
+    if (adminToggle) adminToggle.hidden = true;
 
     document.body.classList.add('auth-locked');
     const input = document.getElementById('accessToken');
@@ -181,6 +184,148 @@ async function forcePasswordChange(session) {
     }
 }
 
+async function adminFetch(path, options = {}) {
+    const doFetch = () => fetch(path, {
+        ...options,
+        headers: { ...(options.headers || {}), Authorization: `Bearer ${getSession()?.access_token}` },
+    });
+    let res = await doFetch();
+    if (res.status === 401 && getSession()?.refresh_token) {
+        const r = await fetch('/.netlify/functions/refresh', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ refresh_token: getSession().refresh_token }),
+        }).catch(() => null);
+        if (r?.ok) {
+            setSession({ ...getSession(), ...(await r.json()) });
+            res = await doFetch();
+        }
+    }
+    return res;
+}
+
+function renderAdminUserRow(user) {
+    const tr = document.createElement('tr');
+
+    const usernameTd = document.createElement('td');
+    usernameTd.textContent = user.username;
+    tr.append(usernameTd);
+
+    const roleTd = document.createElement('td');
+    roleTd.textContent = user.role;
+    tr.append(roleTd);
+
+    const statusTd = document.createElement('td');
+    statusTd.textContent = user.active ? 'Active' : 'Disabled';
+    statusTd.className = user.active ? 'admin-status-active' : 'admin-status-disabled';
+    tr.append(statusTd);
+
+    const actionsTd = document.createElement('td');
+    const isSelf = user.username === getSession()?.username;
+
+    const toggleBtn = document.createElement('button');
+    toggleBtn.textContent = user.active ? 'Disable' : 'Enable';
+    toggleBtn.disabled = isSelf && user.active;
+    toggleBtn.addEventListener('click', () => setUserActive(user.id, !user.active));
+    actionsTd.append(toggleBtn);
+
+    const resetBtn = document.createElement('button');
+    resetBtn.textContent = 'Reset password';
+    resetBtn.addEventListener('click', () => resetUserPassword(user.id));
+    actionsTd.append(resetBtn);
+
+    const deleteBtn = document.createElement('button');
+    deleteBtn.textContent = 'Delete';
+    deleteBtn.className = 'danger';
+    deleteBtn.disabled = isSelf;
+    deleteBtn.addEventListener('click', () => deleteUserAccount(user.id, user.username));
+    actionsTd.append(deleteBtn);
+
+    tr.append(actionsTd);
+    return tr;
+}
+
+async function loadAdminUsers() {
+    const body = document.getElementById('adminUsersBody');
+    if (!body) return;
+    body.textContent = '';
+
+    const res = await adminFetch('/.netlify/functions/admin-users').catch(() => null);
+    if (!res?.ok) return;
+    const { users } = await res.json();
+    users.forEach((user) => body.append(renderAdminUserRow(user)));
+}
+
+async function setUserActive(id, active) {
+    await adminFetch('/.netlify/functions/admin-users', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, active }),
+    }).catch(() => null);
+    loadAdminUsers();
+}
+
+async function resetUserPassword(id) {
+    const next = window.prompt('New temporary password (min 8 characters):');
+    if (!next) return;
+    if (next.length < 8) {
+        window.alert('Password must be at least 8 characters.');
+        return;
+    }
+    await adminFetch('/.netlify/functions/admin-users', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, temp_password: next }),
+    }).catch(() => null);
+    loadAdminUsers();
+}
+
+async function deleteUserAccount(id, username) {
+    if (!window.confirm(`Delete user "${username}"? This cannot be undone.`)) return;
+    await adminFetch(`/.netlify/functions/admin-users?id=${encodeURIComponent(id)}`, { method: 'DELETE' }).catch(() => null);
+    loadAdminUsers();
+}
+
+function openAdminPanel() {
+    if (getSession()?.role !== 'admin') return;
+    document.getElementById('adminOverlay').hidden = false;
+    loadAdminUsers();
+}
+
+function closeAdminPanel() {
+    const overlay = document.getElementById('adminOverlay');
+    if (overlay) overlay.hidden = true;
+}
+
+function setupAdminPanel() {
+    const form = document.getElementById('adminCreateForm');
+    const message = document.getElementById('adminFormMessage');
+
+    form?.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        const username = document.getElementById('adminNewUsername').value.trim();
+        const temp_password = document.getElementById('adminNewPassword').value;
+        const role = document.getElementById('adminNewRole').value;
+        if (message) message.textContent = '';
+
+        const res = await adminFetch('/.netlify/functions/admin-users', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username, temp_password, role }),
+        }).catch(() => null);
+
+        if (res?.ok) {
+            form.reset();
+            document.getElementById('adminNewRole').value = 'user';
+            loadAdminUsers();
+            return;
+        }
+
+        const data = await res?.json().catch(() => null);
+        if (message) message.textContent = data?.message || 'Could not create user.';
+    });
+}
+
 function setupAccessPrompt() {
     const form = document.getElementById('accessForm');
     const usernameInput = document.getElementById('accessUsername');
@@ -217,6 +362,8 @@ function setupAccessPrompt() {
                 success = true;
                 setSession(data);
                 if (data.must_change_password) await forcePasswordChange(data);
+                const adminToggle = document.getElementById('adminToggle');
+                if (adminToggle) adminToggle.hidden = getSession()?.role !== 'admin';
             }
         } catch {
             success = false;
@@ -1561,6 +1708,7 @@ async function initializeApp() {
 }
 
 setupAccessPrompt();
+setupAdminPanel();
 
 document.getElementById('radiusCenter').addEventListener('change', updateRadiusMilesInput);
 document.getElementById('radiusCenter').addEventListener('change', updateMPSummary);
