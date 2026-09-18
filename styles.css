@@ -215,9 +215,15 @@ body.auth-locked .access-input-row button {
     text-transform: uppercase;
 }
 
-.access-remember {
+.access-panel label.access-remember {
+    position: static;
+    width: auto;
+    height: auto;
+    overflow: visible;
+    clip: auto;
     display: flex;
     align-items: center;
+    justify-content: center;
     gap: 8px;
     margin-top: 10px;
     color: #d0a337;
