@@ -89,7 +89,8 @@ async function loadLocationData() {
     const res = await authFetch('/.netlify/functions/locations');
     if (!res.ok) {
         const body = await res.text().catch(() => '');
-        throw new Error(`Unable to load location data (${res.status}): ${body}`);
+        console.error(`Location fetch failed (${res.status}):`, body);
+        throw new Error('Unable to load location data.');
     }
     normalizeLocationData(await res.json());
     return true;
@@ -1889,7 +1890,7 @@ async function initializeApp() {
         if (!loaded) return;
     } catch (e) {
         console.error('Failed to load location data:', e);
-        lockApp(`Your session expired. Please log in again. (${e.message})`);
+        lockApp('Your session expired. Please log in again.');
         return;
     }
 
