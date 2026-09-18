@@ -81,7 +81,7 @@ function unlockMap() {
     const cy = Math.round(rect.top + rect.height / 2);
 
     // Spawn particles only — no ripple overlay during unlock
-    const colors = ['#FF671F', '#FFD700', '#ff9055', '#FFB347', '#ffffff'];
+    const colors = ['#d4af37', '#FFD700', '#f8d675', '#e7c765', '#ffffff'];
     for (let i = 0; i < 18; i++) {
         const p = document.createElement('div');
         p.className = 'theme-particle';
@@ -218,9 +218,10 @@ const lightTiles = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.p
     maxZoom: 19,
     attribution: '&copy; OpenStreetMap contributors'
 });
-const darkTiles = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+const darkTiles = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     maxZoom: 19,
-    attribution: '&copy; OpenStreetMap contributors &copy; CARTO'
+    className: 'dark-tiles',
+    attribution: '&copy; OpenStreetMap contributors'
 });
 let activeTiles = lightTiles.addTo(map);
 map.createPane('countyPane');
@@ -1033,7 +1034,7 @@ function togglePresentationView() {
 }
 
 function spawnThemeFX(cx, cy, newDark) {
-    const colors = ['#FF671F', '#FFD700', '#ff9055', '#FFB347', '#ffffff'];
+    const colors = ['#d4af37', '#FFD700', '#f8d675', '#e7c765', '#ffffff'];
     for (let i = 0; i < 18; i++) {
         const p = document.createElement('div');
         p.className = 'theme-particle';
@@ -1466,7 +1467,7 @@ async function geocodeBWW() {
 }
 
 async function initializeApp() {
-    setDarkMode(localStorage.getItem(THEME_KEY) === 'dark', false);
+    setDarkMode(localStorage.getItem(THEME_KEY) !== 'light', false);
 
     try {
         const loaded = await loadLocationData();
