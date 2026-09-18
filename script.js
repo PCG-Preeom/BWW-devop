@@ -9,46 +9,43 @@ let ALL_BWW = [];
 let ALL_DUNKIN = [];
 let ALL_DESTINATIONS = [];
 
-const SESSION_KEY = 'pcgSession';
+const REMEMBERED_USERNAME_KEY = 'pcgRememberedUsername';
+const INACTIVITY_LIMIT_MS = 5 * 60 * 1000;
 let appInitialized = false;
+let currentSession = null;
+let inactivityTimer = null;
 
 function getSession() {
-    try {
-        return JSON.parse(localStorage.getItem(SESSION_KEY)) || null;
-    } catch {
-        return null;
-    }
+    return currentSession;
 }
 
 function setSession(session) {
-    if (session) localStorage.setItem(SESSION_KEY, JSON.stringify(session));
-    else localStorage.removeItem(SESSION_KEY);
+    currentSession = session || null;
 }
 
-async function tryResumeSession() {
-    const session = getSession();
-    if (!session?.access_token) return false;
-
-    const res = await fetch('/.netlify/functions/session', {
-        headers: { Authorization: `Bearer ${session.access_token}` },
-    }).catch(() => null);
-
-    if (res?.ok) return true;
-    if (res?.status !== 401) return false;
-
-    const refreshed = await fetch('/.netlify/functions/refresh', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ refresh_token: session.refresh_token }),
-    }).catch(() => null);
-    if (!refreshed?.ok) {
-        setSession(null);
-        return false;
-    }
-    const data = await refreshed.json();
-    setSession({ ...session, ...data });
-    return true;
+function resetInactivityTimer() {
+    clearTimeout(inactivityTimer);
+    if (!appInitialized) return;
+    inactivityTimer = setTimeout(lockApp, INACTIVITY_LIMIT_MS);
 }
+
+function lockApp(reason) {
+    if (!appInitialized) return;
+    appInitialized = false;
+    clearTimeout(inactivityTimer);
+    setSession(null);
+
+    document.body.classList.add('auth-locked');
+    const input = document.getElementById('accessToken');
+    const message = document.getElementById('accessMessage');
+    if (input) input.value = '';
+    if (message) message.textContent = reason || '';
+    document.getElementById('accessUsername')?.focus();
+}
+
+['mousemove', 'keydown', 'mousedown', 'scroll', 'touchstart'].forEach((type) => {
+    document.addEventListener(type, resetInactivityTimer, { passive: true });
+});
 
 const BRAND_FILTERS = {
     MP: true,
@@ -144,6 +141,7 @@ function unlockMap() {
         document.body.classList.remove('auth-locked', 'access-exiting');
         initializeApp();
         setTimeout(() => map.invalidateSize(), 250);
+        resetInactivityTimer();
     }, 500);
 }
 
@@ -188,9 +186,16 @@ function setupAccessPrompt() {
     const usernameInput = document.getElementById('accessUsername');
     const input = document.getElementById('accessToken');
     const message = document.getElementById('accessMessage');
+    const rememberCheckbox = document.getElementById('rememberUsername');
     const submitBtn = form?.querySelector('button[type="submit"]');
 
-    usernameInput?.focus();
+    const remembered = localStorage.getItem(REMEMBERED_USERNAME_KEY);
+    if (remembered && usernameInput) {
+        usernameInput.value = remembered;
+        if (rememberCheckbox) rememberCheckbox.checked = true;
+    }
+
+    (remembered ? input : usernameInput)?.focus();
     form?.addEventListener('submit', async (event) => {
         event.preventDefault();
         const username = (usernameInput?.value || '').trim();
@@ -220,6 +225,8 @@ function setupAccessPrompt() {
         logAccessAttempt(success);
 
         if (success) {
+            if (rememberCheckbox?.checked) localStorage.setItem(REMEMBERED_USERNAME_KEY, username);
+            else localStorage.removeItem(REMEMBERED_USERNAME_KEY);
             unlockMap();
             return;
         }
@@ -1554,7 +1561,6 @@ async function initializeApp() {
 }
 
 setupAccessPrompt();
-tryResumeSession().then((ok) => { if (ok) unlockMap(); });
 
 document.getElementById('radiusCenter').addEventListener('change', updateRadiusMilesInput);
 document.getElementById('radiusCenter').addEventListener('change', updateMPSummary);

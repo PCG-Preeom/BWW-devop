@@ -215,6 +215,20 @@ body.auth-locked .access-input-row button {
     text-transform: uppercase;
 }
 
+.access-remember {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 10px;
+    color: #d0a337;
+    font-size: 13px;
+    cursor: pointer;
+}
+
+.access-remember input {
+    accent-color: #d0a337;
+}
+
 .access-theme-btn {
     position: absolute;
     top: 20px;
