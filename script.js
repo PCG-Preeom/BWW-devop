@@ -86,24 +86,9 @@ function normalizeLocationData(data) {
 }
 
 async function loadLocationData() {
-    // Try Supabase via Netlify function
-    try {
-        const res = await fetch('/.netlify/functions/locations');
-        if (res.ok) {
-            normalizeLocationData(await res.json());
-            return true;
-        }
-    } catch {}
-
-    // Fallback: static files
-    if (window.PCG_LOCATION_DATA) {
-        normalizeLocationData(window.PCG_LOCATION_DATA);
-        return true;
-    }
-
-    const response = await fetch('data.json', { cache: 'no-store' });
-    if (!response.ok) throw new Error('Unable to load location data.');
-    normalizeLocationData(await response.json());
+    const res = await authFetch('/.netlify/functions/locations');
+    if (!res.ok) throw new Error('Unable to load location data.');
+    normalizeLocationData(await res.json());
     return true;
 }
 
@@ -184,7 +169,7 @@ async function forcePasswordChange(session) {
     }
 }
 
-async function adminFetch(path, options = {}) {
+async function authFetch(path, options = {}) {
     const doFetch = () => fetch(path, {
         ...options,
         headers: { ...(options.headers || {}), Authorization: `Bearer ${getSession()?.access_token}` },
@@ -250,14 +235,14 @@ async function loadAdminUsers() {
     if (!body) return;
     body.textContent = '';
 
-    const res = await adminFetch('/.netlify/functions/admin-users').catch(() => null);
+    const res = await authFetch('/.netlify/functions/admin-users').catch(() => null);
     if (!res?.ok) return;
     const { users } = await res.json();
     users.forEach((user) => body.append(renderAdminUserRow(user)));
 }
 
 async function setUserActive(id, active) {
-    await adminFetch('/.netlify/functions/admin-users', {
+    await authFetch('/.netlify/functions/admin-users', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id, active }),
@@ -272,7 +257,7 @@ async function resetUserPassword(id) {
         window.alert('Password must be at least 8 characters.');
         return;
     }
-    await adminFetch('/.netlify/functions/admin-users', {
+    await authFetch('/.netlify/functions/admin-users', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id, temp_password: next }),
@@ -282,19 +267,225 @@ async function resetUserPassword(id) {
 
 async function deleteUserAccount(id, username) {
     if (!window.confirm(`Delete user "${username}"? This cannot be undone.`)) return;
-    await adminFetch(`/.netlify/functions/admin-users?id=${encodeURIComponent(id)}`, { method: 'DELETE' }).catch(() => null);
+    await authFetch(`/.netlify/functions/admin-users?id=${encodeURIComponent(id)}`, { method: 'DELETE' }).catch(() => null);
     loadAdminUsers();
+}
+
+const LOCATION_FIELD_DEFS = {
+    mp: [
+        { name: 'external_id', label: 'ID', type: 'text' },
+        { name: 'lat', label: 'Latitude', type: 'number' },
+        { name: 'lng', label: 'Longitude', type: 'number' },
+        { name: 'radius_miles', label: 'Radius (mi)', type: 'number' },
+    ],
+    bww_pa: [
+        { name: 'name', label: 'Name', type: 'text' },
+        { name: 'address', label: 'Address', type: 'text' },
+        { name: 'lat', label: 'Latitude', type: 'number' },
+        { name: 'lng', label: 'Longitude', type: 'number' },
+    ],
+    bww_nj: [
+        { name: 'name', label: 'Name', type: 'text' },
+        { name: 'address', label: 'Address', type: 'text' },
+        { name: 'lat', label: 'Latitude', type: 'number' },
+        { name: 'lng', label: 'Longitude', type: 'number' },
+    ],
+    dunkin: [
+        { name: 'external_id', label: 'ID', type: 'text' },
+        { name: 'address', label: 'Address', type: 'text' },
+        { name: 'region', label: 'Region', type: 'text' },
+        { name: 'lat', label: 'Latitude', type: 'number' },
+        { name: 'lng', label: 'Longitude', type: 'number' },
+        { name: 'property_name', label: 'Property name (optional)', type: 'text' },
+        { name: 'combo', label: 'Combo (Dunkin/Baskin-Robbins)', type: 'checkbox' },
+    ],
+};
+
+function locationRowLabel(loc) {
+    if (loc.type === 'mp') return `MP ${loc.external_id}`;
+    if (loc.type === 'dunkin') return `Dunkin #${loc.external_id}${loc.property_name ? ` (${loc.property_name})` : ''}`;
+    return loc.name || loc.address || `#${loc.id}`;
+}
+
+function renderLocationFields(type, values = {}) {
+    const container = document.getElementById('adminLocFields');
+    container.textContent = '';
+    (LOCATION_FIELD_DEFS[type] || []).forEach((f) => {
+        if (f.type === 'checkbox') {
+            const label = document.createElement('label');
+            label.className = 'admin-loc-checkbox';
+            const input = document.createElement('input');
+            input.type = 'checkbox';
+            input.name = f.name;
+            input.checked = Boolean(values[f.name]);
+            label.append(input, document.createTextNode(f.label));
+            container.append(label);
+        } else {
+            const input = document.createElement('input');
+            input.type = f.type;
+            input.name = f.name;
+            input.placeholder = f.label;
+            if (f.type === 'number') input.step = 'any';
+            if (values[f.name] !== undefined && values[f.name] !== null) input.value = values[f.name];
+            container.append(input);
+        }
+    });
+}
+
+function collectLocationFields(type) {
+    const out = {};
+    (LOCATION_FIELD_DEFS[type] || []).forEach((f) => {
+        const el = document.querySelector(`#adminLocFields [name="${f.name}"]`);
+        if (!el) return;
+        out[f.name] = f.type === 'checkbox' ? el.checked : el.value;
+    });
+    return out;
+}
+
+function renderAdminLocationRow(loc) {
+    const tr = document.createElement('tr');
+
+    const labelTd = document.createElement('td');
+    labelTd.textContent = locationRowLabel(loc);
+    tr.append(labelTd);
+
+    const statusTd = document.createElement('td');
+    statusTd.textContent = loc.active ? 'Active' : 'Inactive';
+    statusTd.className = loc.active ? 'admin-status-active' : 'admin-status-disabled';
+    tr.append(statusTd);
+
+    const actionsTd = document.createElement('td');
+
+    const editBtn = document.createElement('button');
+    editBtn.textContent = 'Edit';
+    editBtn.addEventListener('click', () => startLocationEdit(loc));
+    actionsTd.append(editBtn);
+
+    const toggleBtn = document.createElement('button');
+    toggleBtn.textContent = loc.active ? 'Deactivate' : 'Activate';
+    toggleBtn.addEventListener('click', () => toggleLocationActive(loc.id, !loc.active));
+    actionsTd.append(toggleBtn);
+
+    const deleteBtn = document.createElement('button');
+    deleteBtn.textContent = 'Delete';
+    deleteBtn.className = 'danger';
+    deleteBtn.addEventListener('click', () => deleteLocationRow(loc.id, locationRowLabel(loc)));
+    actionsTd.append(deleteBtn);
+
+    tr.append(actionsTd);
+    return tr;
+}
+
+async function loadAdminLocations() {
+    const body = document.getElementById('adminLocBody');
+    if (!body) return;
+    body.textContent = '';
+    const type = document.getElementById('adminLocType').value;
+    const res = await authFetch(`/.netlify/functions/admin-locations?type=${encodeURIComponent(type)}`).catch(() => null);
+    if (!res?.ok) return;
+    const { locations } = await res.json();
+    locations.forEach((loc) => body.append(renderAdminLocationRow(loc)));
+}
+
+function startLocationEdit(loc) {
+    const typeSelect = document.getElementById('adminLocType');
+    typeSelect.value = loc.type;
+    typeSelect.disabled = true;
+    renderLocationFields(loc.type, loc);
+    document.getElementById('adminLocEditId').value = loc.id;
+    document.getElementById('adminLocSubmitBtn').textContent = 'Save changes';
+    document.getElementById('adminLocCancelBtn').hidden = false;
+    document.getElementById('adminLocFormMessage').textContent = '';
+}
+
+function cancelLocationEdit() {
+    const typeSelect = document.getElementById('adminLocType');
+    typeSelect.disabled = false;
+    document.getElementById('adminLocEditId').value = '';
+    document.getElementById('adminLocSubmitBtn').textContent = 'Add location';
+    document.getElementById('adminLocCancelBtn').hidden = true;
+    renderLocationFields(typeSelect.value);
+    document.getElementById('adminLocFormMessage').textContent = '';
+}
+
+async function toggleLocationActive(id, active) {
+    await authFetch('/.netlify/functions/admin-locations', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, active }),
+    }).catch(() => null);
+    loadAdminLocations();
+    refreshMapData();
+}
+
+async function deleteLocationRow(id, label) {
+    if (!window.confirm(`Delete "${label}"? This cannot be undone.`)) return;
+    await authFetch(`/.netlify/functions/admin-locations?id=${encodeURIComponent(id)}`, { method: 'DELETE' }).catch(() => null);
+    loadAdminLocations();
+    refreshMapData();
+}
+
+function switchAdminTab(tabId) {
+    document.querySelectorAll('.admin-tab-panel').forEach((el) => { el.hidden = el.id !== tabId; });
+    document.querySelectorAll('.admin-tab').forEach((btn) => { btn.classList.toggle('active', btn.dataset.tab === tabId); });
+    if (tabId === 'adminUsersTab') loadAdminUsers();
+    else loadAdminLocations();
 }
 
 function openAdminPanel() {
     if (getSession()?.role !== 'admin') return;
     document.getElementById('adminOverlay').hidden = false;
-    loadAdminUsers();
+    cancelLocationEdit();
+    switchAdminTab('adminUsersTab');
 }
 
 function closeAdminPanel() {
     const overlay = document.getElementById('adminOverlay');
     if (overlay) overlay.hidden = true;
+}
+
+function setupAdminLocationsPanel() {
+    const typeSelect = document.getElementById('adminLocType');
+    const form = document.getElementById('adminLocForm');
+    const message = document.getElementById('adminLocFormMessage');
+    if (!typeSelect || !form) return;
+
+    renderLocationFields(typeSelect.value);
+
+    typeSelect.addEventListener('change', () => {
+        renderLocationFields(typeSelect.value);
+        loadAdminLocations();
+    });
+
+    form.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        const type = typeSelect.value;
+        const fields = collectLocationFields(type);
+        const editId = document.getElementById('adminLocEditId').value;
+        if (message) message.textContent = '';
+
+        const res = editId
+            ? await authFetch('/.netlify/functions/admin-locations', {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id: Number(editId), ...fields }),
+            }).catch(() => null)
+            : await authFetch('/.netlify/functions/admin-locations', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ type, ...fields }),
+            }).catch(() => null);
+
+        if (res?.ok) {
+            cancelLocationEdit();
+            loadAdminLocations();
+            refreshMapData();
+            return;
+        }
+
+        const data = await res?.json().catch(() => null);
+        if (message) message.textContent = data?.message || 'Could not save location.';
+    });
 }
 
 function setupAdminPanel() {
@@ -308,7 +499,7 @@ function setupAdminPanel() {
         const role = document.getElementById('adminNewRole').value;
         if (message) message.textContent = '';
 
-        const res = await adminFetch('/.netlify/functions/admin-users', {
+        const res = await authFetch('/.netlify/functions/admin-users', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ username, temp_password, role }),
@@ -324,6 +515,8 @@ function setupAdminPanel() {
         const data = await res?.json().catch(() => null);
         if (message) message.textContent = data?.message || 'Could not create user.';
     });
+
+    setupAdminLocationsPanel();
 }
 
 function setupAccessPrompt() {
@@ -1692,12 +1885,8 @@ async function initializeApp() {
         const loaded = await loadLocationData();
         if (!loaded) return;
     } catch (e) {
-        const filterSummary = document.getElementById('filterSummary');
-        const message = 'Unable to load location data. Make sure data.js is next to index.html.';
-        if (filterSummary) {
-            filterSummary.textContent = message;
-        }
-        throw e;
+        lockApp('Your session expired. Please log in again.');
+        return;
     }
 
     addMarkers();
@@ -1705,6 +1894,17 @@ async function initializeApp() {
     await loadCountyHighlights();
     drawAllMPRadii();
     loadPinnedAddresses();
+}
+
+async function refreshMapData() {
+    try {
+        await loadLocationData();
+        addMarkers();
+        fillSelects();
+        drawAllMPRadii();
+    } catch {
+        // Session likely expired; the next authenticated action will re-lock the app.
+    }
 }
 
 setupAccessPrompt();

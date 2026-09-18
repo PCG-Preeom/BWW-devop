@@ -347,6 +347,91 @@ body.auth-locked .access-input-row button {
     font-weight: 700;
 }
 
+.admin-tabs {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 16px;
+    border-bottom: 1px solid rgba(128, 128, 128, 0.3);
+}
+
+.admin-tab {
+    padding: 8px 16px;
+    border: 0;
+    background: transparent;
+    color: var(--text);
+    opacity: 0.6;
+    cursor: pointer;
+    font-weight: 600;
+    border-bottom: 2px solid transparent;
+}
+
+.admin-tab.active {
+    opacity: 1;
+    border-bottom-color: #d0a337;
+}
+
+.admin-loc-form {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: flex-start;
+    margin-bottom: 8px;
+}
+
+.admin-loc-fields {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    flex: 1 1 auto;
+}
+
+.admin-loc-fields input[type="text"],
+.admin-loc-fields input[type="number"] {
+    flex: 1 1 120px;
+    padding: 8px 10px;
+    border-radius: 6px;
+    border: 1px solid rgba(128, 128, 128, 0.4);
+    background: var(--panel);
+    color: var(--text);
+}
+
+.admin-loc-fields label.admin-loc-checkbox {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 4px;
+    font-size: 13px;
+}
+
+#adminLocType {
+    padding: 8px 10px;
+    border-radius: 6px;
+    border: 1px solid rgba(128, 128, 128, 0.4);
+    background: var(--panel);
+    color: var(--text);
+}
+
+.admin-loc-form-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.admin-loc-form-actions button {
+    padding: 8px 16px;
+    border: 0;
+    border-radius: 6px;
+    background: #d0a337;
+    color: #05070b;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+#adminLocCancelBtn {
+    background: transparent;
+    border: 1px solid rgba(128, 128, 128, 0.4);
+    color: var(--text);
+}
+
 .access-theme-btn {
     position: absolute;
     top: 20px;

@@ -49,7 +49,7 @@
                         <button class="icon-btn" id="presentationToggle" onclick="togglePresentationView()" title="Presentation View"><i class="fas fa-expand"></i></button>
                         <button class="icon-btn" id="themeToggle" onclick="toggleDarkMode()" title="Toggle Dark Mode"><i class="fas fa-moon"></i></button>
                         </div>
-                        <div class="version-badge">v1.9</div>
+                        <div class="version-badge">v2.5</div>
                     </div>
                 </div>
                 <details class="legend-details">
@@ -178,36 +178,71 @@
     <div id="adminOverlay" class="admin-overlay" hidden>
         <div class="admin-panel">
             <div class="admin-panel-header">
-                <h2>Manage Users</h2>
+                <h2>Admin</h2>
                 <button class="icon-btn" onclick="closeAdminPanel()" aria-label="Close"><i class="fas fa-xmark"></i></button>
             </div>
 
-            <form id="adminCreateForm" class="admin-create-form">
-                <input id="adminNewUsername" type="text" placeholder="Username" autocomplete="off" required>
-                <input id="adminNewPassword" type="text" placeholder="Temporary password" autocomplete="off" required>
-                <select id="adminNewRole">
-                    <option value="user" selected>User</option>
-                    <option value="admin">Admin</option>
-                </select>
-                <button type="submit">Create user</button>
-            </form>
-            <div id="adminFormMessage" class="admin-form-message"></div>
+            <div class="admin-tabs">
+                <button type="button" class="admin-tab active" data-tab="adminUsersTab" onclick="switchAdminTab('adminUsersTab')">Users</button>
+                <button type="button" class="admin-tab" data-tab="adminLocationsTab" onclick="switchAdminTab('adminLocationsTab')">Locations</button>
+            </div>
 
-            <table class="admin-users-table">
-                <thead>
-                    <tr>
-                        <th>Username</th>
-                        <th>Role</th>
-                        <th>Status</th>
-                        <th></th>
-                    </tr>
-                </thead>
-                <tbody id="adminUsersBody"></tbody>
-            </table>
+            <div id="adminUsersTab" class="admin-tab-panel">
+                <form id="adminCreateForm" class="admin-create-form">
+                    <input id="adminNewUsername" type="text" placeholder="Username" autocomplete="off" required>
+                    <input id="adminNewPassword" type="text" placeholder="Temporary password" autocomplete="off" required>
+                    <select id="adminNewRole">
+                        <option value="user" selected>User</option>
+                        <option value="admin">Admin</option>
+                    </select>
+                    <button type="submit">Create user</button>
+                </form>
+                <div id="adminFormMessage" class="admin-form-message"></div>
+
+                <table class="admin-users-table">
+                    <thead>
+                        <tr>
+                            <th>Username</th>
+                            <th>Role</th>
+                            <th>Status</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody id="adminUsersBody"></tbody>
+                </table>
+            </div>
+
+            <div id="adminLocationsTab" class="admin-tab-panel" hidden>
+                <form id="adminLocForm" class="admin-loc-form">
+                    <select id="adminLocType">
+                        <option value="mp">MP</option>
+                        <option value="bww_pa">BWW PA</option>
+                        <option value="bww_nj">BWW NJ</option>
+                        <option value="dunkin">Dunkin</option>
+                    </select>
+                    <div id="adminLocFields" class="admin-loc-fields"></div>
+                    <input type="hidden" id="adminLocEditId">
+                    <div class="admin-loc-form-actions">
+                        <button type="submit" id="adminLocSubmitBtn">Add location</button>
+                        <button type="button" id="adminLocCancelBtn" hidden onclick="cancelLocationEdit()">Cancel</button>
+                    </div>
+                </form>
+                <div id="adminLocFormMessage" class="admin-form-message"></div>
+
+                <table class="admin-users-table">
+                    <thead>
+                        <tr>
+                            <th>Location</th>
+                            <th>Status</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody id="adminLocBody"></tbody>
+                </table>
+            </div>
         </div>
     </div>
 
-    <script src="data.js"></script>
     <script src="script.js"></script>
 </body>
 </html>
