@@ -34,7 +34,7 @@ Netlify functions ──► Supabase Auth  (passwords, sessions, bans)
 
 | Name | Purpose |
 |---|---|
-| `SUPABASE_DATABASE_URL` | `https://eqfohvmzwpiierqvpxud.supabase.co` |
+| `SUPABASE_DATABASE_URL` | your Supabase project URL (`https://<project-ref>.supabase.co`, no trailing slash) |
 | `SUPABASE_ANON_KEY` | Auth sign-in and token refresh calls |
 | `SUPABASE_SERVICE_ROLE_KEY` | Admin operations and profile lookups |
 
