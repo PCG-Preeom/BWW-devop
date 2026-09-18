@@ -9,8 +9,46 @@ let ALL_BWW = [];
 let ALL_DUNKIN = [];
 let ALL_DESTINATIONS = [];
 
-const ACCESS_TOKEN = 'People';
+const SESSION_KEY = 'pcgSession';
 let appInitialized = false;
+
+function getSession() {
+    try {
+        return JSON.parse(localStorage.getItem(SESSION_KEY)) || null;
+    } catch {
+        return null;
+    }
+}
+
+function setSession(session) {
+    if (session) localStorage.setItem(SESSION_KEY, JSON.stringify(session));
+    else localStorage.removeItem(SESSION_KEY);
+}
+
+async function tryResumeSession() {
+    const session = getSession();
+    if (!session?.access_token) return false;
+
+    const res = await fetch('/.netlify/functions/session', {
+        headers: { Authorization: `Bearer ${session.access_token}` },
+    }).catch(() => null);
+
+    if (res?.ok) return true;
+    if (res?.status !== 401) return false;
+
+    const refreshed = await fetch('/.netlify/functions/refresh', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ refresh_token: session.refresh_token }),
+    }).catch(() => null);
+    if (!refreshed?.ok) {
+        setSession(null);
+        return false;
+    }
+    const data = await refreshed.json();
+    setSession({ ...session, ...data });
+    return true;
+}
 
 const BRAND_FILTERS = {
     MP: true,
@@ -123,33 +161,60 @@ function logAccessAttempt(success) {
     });
 }
 
+async function forcePasswordChange(session) {
+    const message = document.getElementById('accessMessage');
+    while (true) {
+        const next = window.prompt('This account needs a new password (min 8 characters). Set one now:');
+        if (next === null) continue; // must set a password to continue
+        if (next.length < 8) {
+            if (message) message.textContent = 'Password must be at least 8 characters.';
+            continue;
+        }
+        const res = await fetch('/.netlify/functions/change-password', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+            body: JSON.stringify({ new_password: next }),
+        }).catch(() => null);
+        if (res?.ok) {
+            setSession({ ...session, must_change_password: false });
+            return;
+        }
+        if (message) message.textContent = 'Could not set password, try again.';
+    }
+}
+
 function setupAccessPrompt() {
     const form = document.getElementById('accessForm');
+    const usernameInput = document.getElementById('accessUsername');
     const input = document.getElementById('accessToken');
     const message = document.getElementById('accessMessage');
     const submitBtn = form?.querySelector('button[type="submit"]');
 
-    input?.focus();
+    usernameInput?.focus();
     form?.addEventListener('submit', async (event) => {
         event.preventDefault();
-        const token = (input?.value || '').trim();
-        if (!token) return;
+        const username = (usernameInput?.value || '').trim();
+        const password = input?.value || '';
+        if (!username || !password) return;
 
         if (submitBtn) submitBtn.disabled = true;
         if (message) message.textContent = '';
 
         let success = false;
         try {
-            const res = await fetch('/.netlify/functions/verify-token', {
+            const res = await fetch('/.netlify/functions/login', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ token }),
+                body: JSON.stringify({ username, password }),
             });
             const data = await res.json();
-            success = data.success === true;
+            if (res.ok) {
+                success = true;
+                setSession(data);
+                if (data.must_change_password) await forcePasswordChange(data);
+            }
         } catch {
-            // If function is unreachable, fall back to local check
-            success = token === ACCESS_TOKEN;
+            success = false;
         }
 
         logAccessAttempt(success);
@@ -160,7 +225,7 @@ function setupAccessPrompt() {
         }
 
         if (submitBtn) submitBtn.disabled = false;
-        if (message) message.textContent = 'Invalid access code.';
+        if (message) message.textContent = 'Invalid username or password.';
         input?.select();
     });
 }
@@ -1489,6 +1554,7 @@ async function initializeApp() {
 }
 
 setupAccessPrompt();
+tryResumeSession().then((ok) => { if (ok) unlockMap(); });
 
 document.getElementById('radiusCenter').addEventListener('change', updateRadiusMilesInput);
 document.getElementById('radiusCenter').addEventListener('change', updateMPSummary);

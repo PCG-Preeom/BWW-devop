@@ -17,10 +17,14 @@
                 <img src="unnamed.png" alt="">
             </div>
             <h1>People Capital Group</h1>
-            <label for="accessToken">Access code</label>
+            <label for="accessUsername">Username</label>
             <div class="access-input-row">
-                <input id="accessToken" type="password" placeholder="Enter access code" autocomplete="current-password">
-                <button type="submit" aria-label="Unlock map"><i class="fas fa-lock"></i></button>
+                <input id="accessUsername" type="text" placeholder="Username" autocomplete="username">
+            </div>
+            <label for="accessToken">Password</label>
+            <div class="access-input-row">
+                <input id="accessToken" type="password" placeholder="Password" autocomplete="current-password">
+                <button type="submit" aria-label="Log in"><i class="fas fa-lock"></i></button>
             </div>
             <div id="accessMessage" class="access-message"></div>
         </form>
