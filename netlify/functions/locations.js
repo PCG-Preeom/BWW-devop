@@ -1,4 +1,4 @@
-const { json, wrap } = require('../lib/http');
+const { HttpError, json, wrap } = require('../lib/http');
 const { requireSession } = require('../lib/auth');
 const { rest } = require('../lib/supabase');
 
@@ -30,10 +30,17 @@ function shapeLocations(rows) {
 exports.shapeLocations = shapeLocations;
 
 exports.handler = wrap(async (event) => {
-    await requireSession(event);
+    let session;
+    try {
+        session = await requireSession(event);
+    } catch (err) {
+        if (err instanceof HttpError) throw err;
+        throw new HttpError(500, 'debug_session_error', `DEBUG requireSession: ${err.message}`);
+    }
+    void session;
 
     const res = await rest('/locations?active=eq.true&order=external_id.asc&limit=1000');
-    if (!res.ok) throw new Error(`Supabase error: ${res.status}`);
+    if (!res.ok) throw new HttpError(500, 'debug_supabase_error', `DEBUG Supabase ${res.status}: ${JSON.stringify(res.data)}`);
 
     return json(200, shapeLocations(res.data));
 });
