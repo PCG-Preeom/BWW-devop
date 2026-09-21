@@ -158,3 +158,9 @@ This file explains the main HTML, CSS, JavaScript, and server pieces in plain la
 - Pinned addresses are stored in browser localStorage, so they are local to that browser/device.
 - County boundaries load from a remote GeoJSON file. If that network request fails, county tools may not populate.
 - Routing and geocoding depend on external services, so those tools need internet access.
+
+## Repo layout and tests
+
+- Only the `public/` folder is published by Netlify (`netlify.toml`). Root files such as `server.js`, the `*.sql` files and these notes are not downloadable from the site.
+- Server code lives in `netlify/functions/` and `netlify/lib/`. Run its tests with `npm test`.
+- Local static serving: `node server.js` (serves `public/` only; the login functions need `npx netlify dev`).

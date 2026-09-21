@@ -4,6 +4,7 @@ const os = require('os');
 const path = require('path');
 
 const root = __dirname;
+const publicDir = path.join(root, 'public');
 const host = process.env.HOST || '0.0.0.0';
 let port = Number(process.env.PORT) || 3000;
 const logsDir = path.join(root, 'logs');
@@ -24,9 +25,9 @@ function send(res, status, body, headers = {}) {
 
 function serveFile(res, requestPath) {
     const cleanPath = requestPath === '/' ? '/index.html' : requestPath;
-    const filePath = path.resolve(root, `.${decodeURIComponent(cleanPath)}`);
+    const filePath = path.resolve(publicDir, `.${decodeURIComponent(cleanPath)}`);
 
-    if (!filePath.startsWith(root)) {
+    if (!filePath.startsWith(publicDir)) {
         send(res, 403, 'Forbidden');
         return;
     }

@@ -1,0 +1,7 @@
+{
+  "name": "pcg-map",
+  "private": true,
+  "scripts": {
+    "test": "node --test"
+  }
+}
