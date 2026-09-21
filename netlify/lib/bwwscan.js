@@ -6,6 +6,13 @@ const MIN_STORES = 30; // PA + NJ currently list ~75; far fewer means the sitema
 const USER_AGENT = 'PCGMap-BWWScan/1.0 (weekly new-store check for an internal map)';
 const UPPER_WORDS = new Set(['us', 'nj', 'pa', 'ne', 'nw', 'se', 'sw']);
 
+// Rough bounding box around Pennsylvania and New Jersey; a geocoder hit outside it is a miss.
+const SERVICE_AREA = { minLat: 38.9, maxLat: 42.6, minLng: -80.6, maxLng: -73.8 };
+
+function inServiceArea(lat, lng) {
+    return lat >= SERVICE_AREA.minLat && lat <= SERVICE_AREA.maxLat && lng >= SERVICE_AREA.minLng && lng <= SERVICE_AREA.maxLng;
+}
+
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 function titleCase(text) {
@@ -57,7 +64,7 @@ async function geocode(address, city, state) {
         if (!Array.isArray(rows) || !rows[0]) return null;
         const lat = Number(rows[0].lat);
         const lng = Number(rows[0].lon);
-        return Number.isFinite(lat) && Number.isFinite(lng) ? { lat, lng } : null;
+        return Number.isFinite(lat) && Number.isFinite(lng) && inServiceArea(lat, lng) ? { lat, lng } : null;
     } catch {
         return null;
     }
@@ -134,4 +141,4 @@ async function runScan({ maxGeocode = 15, sleepMs = 1100 } = {}) {
     return { baseline: false, total: stores.length, newCount: fresh.length, geocoded };
 }
 
-module.exports = { SITEMAP_URL, parseSitemap, prettyAddress, prettyCity, geocode, runScan };
+module.exports = { SITEMAP_URL, inServiceArea, parseSitemap, prettyAddress, prettyCity, geocode, runScan };

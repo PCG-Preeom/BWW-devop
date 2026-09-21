@@ -64,6 +64,11 @@ test('geocode returns coordinates, strips suite text, and returns null on no mat
     assert.equal(await geocode('1 Nowhere Rd', 'Nowhere', 'pa'), null);
 });
 
+test('geocode ignores results that land outside PA and NJ', async () => {
+    mockFetch(router([['GET', 'nominatim.openstreetmap.org/search', { status: 200, body: [{ lat: '29.76', lon: '-95.37' }] }]]));
+    assert.equal(await geocode('1 Main St', 'Houston', 'pa'), null);
+});
+
 test('first scan records a baseline and flags nothing', async () => {
     const calls = mockFetch(router([
         ['GET', SITEMAP_URL, { status: 200, body: sitemap(stores()) }],

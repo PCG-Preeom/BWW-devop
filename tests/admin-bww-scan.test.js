@@ -44,10 +44,104 @@ test('GET returns pending stores and the last run', async () => {
 test('GET works before any scan has run', async () => {
     mockFetch(asAdmin([
         ['GET', '/rest/v1/bww_scan_stores?status=eq.pending', { status: 200, body: [] }],
+        ['GET', '/rest/v1/bww_scan_stores?status=eq.baseline', { status: 200, body: [] }],
         ['GET', '/rest/v1/bww_scan_runs', { status: 200, body: [] }],
     ]));
     const body = JSON.parse((await handler(req('GET'))).body);
-    assert.deepEqual(body, { pending: [], lastRun: null });
+    assert.deepEqual(body, { pending: [], lastRun: null, baselineCount: 0 });
+});
+
+test('GET reports how many baseline stores could be imported', async () => {
+    mockFetch(asAdmin([
+        ['GET', '/rest/v1/bww_scan_stores?status=eq.pending', { status: 200, body: [] }],
+        ['GET', '/rest/v1/bww_scan_stores?status=eq.baseline', { status: 200, body: [{ id: 1 }, { id: 2 }, { id: 3 }] }],
+        ['GET', '/rest/v1/bww_scan_runs', { status: 200, body: [] }],
+    ]));
+    assert.equal(JSON.parse((await handler(req('GET'))).body).baselineCount, 3);
+});
+
+test('import moves baseline stores to pending, skipping ones already on the map', async () => {
+    const baseline = [
+        { id: 1, state: 'pa', address: '3798 Dryland Way' },
+        { id: 2, state: 'pa', address: '100 New Road' },
+        { id: 3, state: 'nj', address: '3798 Other Street' },
+    ];
+    const calls = mockFetch(asAdmin([
+        ['GET', '/rest/v1/locations?type=in.', { status: 200, body: [{ type: 'bww_pa', address: '3798 Dryland Way, Easton, PA 18045', lat: 40.6, lng: -75.3 }] }],
+        ['GET', '/rest/v1/bww_scan_stores?status=eq.baseline', { status: 200, body: baseline }],
+        ['PATCH', '/rest/v1/bww_scan_stores?id=in.(2,3)', { status: 200, body: [] }],
+    ]));
+    const res = await handler(req('POST', { body: { action: 'import_baseline' } }));
+    assert.equal(res.statusCode, 200);
+    assert.deepEqual(JSON.parse(res.body), { imported: 2, skipped: 1 });
+    assert.deepEqual(calls.find((c) => c.method === 'PATCH').body, { status: 'pending' });
+});
+
+test('import does nothing when there is nothing to import', async () => {
+    const calls = mockFetch(asAdmin([
+        ['GET', '/rest/v1/locations?type=in.', { status: 200, body: [] }],
+        ['GET', '/rest/v1/bww_scan_stores?status=eq.baseline', { status: 200, body: [] }],
+    ]));
+    const res = await handler(req('POST', { body: { action: 'import_baseline' } }));
+    assert.deepEqual(JSON.parse(res.body), { imported: 0, skipped: 0 });
+    assert.ok(!calls.some((c) => c.method === 'PATCH'));
+});
+
+test('set_coords saves coordinates on a pending store', async () => {
+    const calls = mockFetch(asAdmin([
+        ['GET', '/rest/v1/bww_scan_stores?id=eq.7', { status: 200, body: [row({ lat: null, lng: null })] }],
+        ['PATCH', '/rest/v1/bww_scan_stores?id=eq.7', { status: 200, body: [] }],
+    ]));
+    const res = await handler(req('POST', { body: { action: 'set_coords', id: 7, lat: '40.1', lng: '-75.2' } }));
+    assert.equal(res.statusCode, 200);
+    assert.deepEqual(calls.find((c) => c.method === 'PATCH').body, { lat: 40.1, lng: -75.2 });
+});
+
+test('set_coords refuses points outside PA and NJ', async () => {
+    const calls = mockFetch(asAdmin([
+        ['GET', '/rest/v1/bww_scan_stores?id=eq.7', { status: 200, body: [row({ lat: null, lng: null })] }],
+    ]));
+    const res = await handler(req('POST', { body: { action: 'set_coords', id: 7, lat: '29.7', lng: '-95.3' } }));
+    assert.equal(res.statusCode, 400);
+    assert.equal(JSON.parse(res.body).error, 'bad_coordinates');
+    assert.ok(!calls.some((c) => c.method === 'PATCH'));
+});
+
+test('approve_all adds ready stores, skips duplicates of existing pins, and marks them', async () => {
+    const pending = [
+        row({ id: 10, store_id: '3010', state: 'pa', city: 'Easton', address: '1 First St', lat: 40.0, lng: -75.0 }),
+        row({ id: 11, store_id: '3011', state: 'nj', city: 'Brick', address: '2 Second St', lat: 40.5, lng: -74.5 }),
+        row({ id: 12, store_id: '3012', state: 'pa', city: 'Erie', address: '3 Third St', lat: null, lng: null }),
+    ];
+    const calls = mockFetch(asAdmin([
+        ['GET', '/rest/v1/locations?type=in.', { status: 200, body: [{ type: 'bww_pa', address: '1 First St', lat: 40.0001, lng: -75.0001 }] }],
+        ['GET', '/rest/v1/bww_scan_stores?status=eq.pending', { status: 200, body: pending }],
+        ['POST', '/rest/v1/locations', { status: 201, body: [{ id: 1 }] }],
+        ['PATCH', '/rest/v1/bww_scan_stores?id=in.(11)', { status: 200, body: [] }],
+        ['PATCH', '/rest/v1/bww_scan_stores?id=in.(10)', { status: 200, body: [] }],
+    ]));
+    const res = await handler(req('POST', { body: { action: 'approve_all' } }));
+    assert.equal(res.statusCode, 200);
+    assert.deepEqual(JSON.parse(res.body), { approved: 1, duplicates: 1 });
+
+    const insert = calls.find((c) => c.method === 'POST' && c.url.includes('/rest/v1/locations'));
+    assert.deepEqual(insert.body, [{
+        type: 'bww_nj', name: 'Buffalo Wild Wings - Brick', address: '2 Second St, Brick, NJ', lat: 40.5, lng: -74.5,
+    }]);
+    const approved = calls.find((c) => c.method === 'PATCH' && c.url.includes('id=in.(11)'));
+    assert.equal(approved.body.status, 'approved');
+    const duplicate = calls.find((c) => c.method === 'PATCH' && c.url.includes('id=in.(10)'));
+    assert.equal(duplicate.body.status, 'rejected');
+});
+
+test('approve_all with nothing ready changes nothing', async () => {
+    const calls = mockFetch(asAdmin([
+        ['GET', '/rest/v1/locations?type=in.', { status: 200, body: [] }],
+        ['GET', '/rest/v1/bww_scan_stores?status=eq.pending', { status: 200, body: [row({ lat: null, lng: null })] }],
+    ]));
+    const res = await handler(req('POST', { body: { action: 'approve_all' } }));
+    assert.deepEqual(JSON.parse(res.body), { approved: 0, duplicates: 0 });
+    assert.ok(!calls.some((c) => c.method === 'POST' || c.method === 'PATCH'));
 });
 
 test('POST scan runs the scan and returns its result', async () => {
