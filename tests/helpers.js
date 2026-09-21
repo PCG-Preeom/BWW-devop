@@ -28,7 +28,7 @@ function mockFetch(handler) {
         return {
             ok: r.status >= 200 && r.status < 300,
             status: r.status,
-            text: async () => (r.body === undefined ? '' : JSON.stringify(r.body)),
+            text: async () => (r.body === undefined ? '' : typeof r.body === 'string' ? r.body : JSON.stringify(r.body)),
         };
     };
     return calls;
