@@ -172,3 +172,4 @@ This file explains the main HTML, CSS, JavaScript, and server pieces in plain la
 - New stores land in a pending list. Approving one adds it to Locations (type `bww_pa` or `bww_nj`); rejecting hides it for good.
 - Setup: run `supabase-bww-scan.sql` in Supabase, deploy, then click Scan now once to record the baseline.
 - If BWW changes its sitemap (fewer than 30 PA/NJ stores found) the scan stops and saves nothing.
+- Existing PA/NJ stores are not pinned automatically. In Admin > New BWW stores: **Import existing stores** (moves the baseline into the list, skipping stores already on the map), **Find coordinates** (looks up addresses from the browser, about one per second), then **Approve all with coordinates** (adds them to the map; anything within 0.1 mile of an existing BWW pin is skipped as a duplicate).

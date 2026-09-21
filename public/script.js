@@ -462,7 +462,8 @@ async function loadBwwScan() {
         status.textContent = 'Could not load the scan. Has supabase-bww-scan.sql been run?';
         return;
     }
-    const { pending, lastRun } = await res.json();
+    const { pending, lastRun, baselineCount = 0 } = await res.json();
+    updateScanButtons(pending, baselineCount);
     status.textContent = lastRun
         ? `Last scan ${new Date(lastRun.ran_at).toLocaleString()}: ${lastRun.total} stores listed, ${lastRun.new_count} new.`
         : 'No scan has run yet. Click Scan now to record the current list as a baseline.';
@@ -544,6 +545,105 @@ async function reviewScanRow(row, action, extra) {
     }
     if (action === 'approve') refreshMapData();
     loadBwwScan();
+}
+
+let scanGeocoding = false;
+
+function updateScanButtons(pending, baselineCount) {
+    const withCoords = pending.filter((r) => r.lat != null && r.lng != null).length;
+    const missing = pending.length - withCoords;
+    const setButton = (id, visible, label) => {
+        const btn = document.getElementById(id);
+        if (!btn) return;
+        btn.hidden = !visible;
+        if (label) btn.textContent = label;
+    };
+    setButton('adminImportBtn', baselineCount > 0, `Import existing stores (${baselineCount})`);
+    setButton('adminGeoBtn', missing > 0 || scanGeocoding, scanGeocoding ? 'Stop' : `Find coordinates (${missing})`);
+    setButton('adminApproveAllBtn', withCoords > 0, `Approve all with coordinates (${withCoords})`);
+}
+
+async function importBwwBaseline() {
+    const status = document.getElementById('adminScanStatus');
+    status.textContent = 'Importing...';
+    const { ok, data } = await postScanAction({ action: 'import_baseline' });
+    if (!ok) {
+        status.textContent = data.message || 'The import failed. Please try again.';
+        return;
+    }
+    await loadBwwScan();
+    status.textContent = `Imported ${data.imported} store${data.imported === 1 ? '' : 's'} into the list`
+        + (data.skipped ? `; ${data.skipped} already on your map ${data.skipped === 1 ? 'was' : 'were'} skipped` : '')
+        + '. Next: Find coordinates.';
+}
+
+async function lookupScanCoordinates(row) {
+    const street = row.address.replace(/,?\s*(suite|ste|unit|#).*$/i, '').trim();
+    const params = new URLSearchParams({
+        format: 'json', limit: '1', countrycodes: 'us', street, city: row.city, state: row.state.toUpperCase(),
+    });
+    try {
+        const res = await fetch(`https://nominatim.openstreetmap.org/search?${params}`, { headers: { Accept: 'application/json' } });
+        if (!res.ok) return null;
+        const hits = await res.json();
+        if (!hits[0]) return null;
+        return { lat: Number(hits[0].lat), lng: Number(hits[0].lon) };
+    } catch {
+        return null;
+    }
+}
+
+// Looks up each pending store's address from the browser, about one per second (the free geocoder's limit).
+async function findScanCoordinates() {
+    if (scanGeocoding) {
+        scanGeocoding = false; // the button reads "Stop" while a run is going
+        return;
+    }
+    const status = document.getElementById('adminScanStatus');
+    const button = document.getElementById('adminGeoBtn');
+    const res = await authFetch('/.netlify/functions/admin-bww-scan').catch(() => null);
+    if (!res?.ok) {
+        status.textContent = 'Could not load the list. Please try again.';
+        return;
+    }
+    const rows = (await res.json()).pending.filter((r) => r.lat == null || r.lng == null);
+    if (!rows.length) return;
+
+    scanGeocoding = true;
+    button.textContent = 'Stop';
+    let done = 0;
+    let found = 0;
+    for (const row of rows) {
+        if (!scanGeocoding) break;
+        status.textContent = `Finding coordinates: ${done + 1} of ${rows.length} (click Stop to pause)...`;
+        const coords = await lookupScanCoordinates(row);
+        if (coords) {
+            const saved = await postScanAction({ action: 'set_coords', id: row.id, ...coords });
+            if (saved.ok) found += 1;
+        }
+        done += 1;
+        await new Promise((resolve) => setTimeout(resolve, 1100));
+    }
+    scanGeocoding = false;
+    await loadBwwScan();
+    status.textContent = `Found coordinates for ${found} of ${done} store${done === 1 ? '' : 's'}.`
+        + (found < done ? ' Type the rest in by hand, or reject them.' : ' Next: Approve all with coordinates.');
+}
+
+async function approveAllScan() {
+    const status = document.getElementById('adminScanStatus');
+    if (!window.confirm('Add every store that has coordinates to the map now?')) return;
+    status.textContent = 'Adding stores...';
+    const { ok, data } = await postScanAction({ action: 'approve_all' });
+    if (!ok) {
+        status.textContent = data.message || 'That did not work. Please try again.';
+        return;
+    }
+    await loadBwwScan();
+    refreshMapData();
+    status.textContent = `Added ${data.approved} store${data.approved === 1 ? '' : 's'} to the map`
+        + (data.duplicates ? `; ${data.duplicates} already on the map ${data.duplicates === 1 ? 'was' : 'were'} skipped` : '')
+        + '.';
 }
 
 async function runBwwScan() {

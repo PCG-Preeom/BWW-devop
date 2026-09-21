@@ -2954,3 +2954,13 @@ body.dark-mode .brand-actions .icon-btn:hover {
     font-size: 12px;
     font-weight: 600;
 }
+
+.admin-scan-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 10px;
+}
+
+.admin-scan-actions button[hidden] { display: none; }
+.admin-scan-actions button { width: auto; flex: 0 0 auto; }

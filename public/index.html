@@ -49,7 +49,7 @@
                         <button class="icon-btn" id="presentationToggle" onclick="togglePresentationView()" title="Presentation View" aria-label="Toggle presentation view"><i class="fas fa-expand"></i></button>
                         <button class="icon-btn" id="themeToggle" onclick="toggleDarkMode()" title="Toggle Dark Mode" aria-label="Toggle dark mode"><i class="fas fa-moon"></i></button>
                         </div>
-                        <div class="version-badge">v2.9</div>
+                        <div class="version-badge">v3.0</div>
                     </div>
                 </div>
                 <details class="legend-details">
@@ -247,6 +247,11 @@
                 <div class="admin-scan-bar">
                     <button type="button" id="adminScanBtn" onclick="runBwwScan()">Scan now</button>
                     <span id="adminScanStatus" class="admin-scan-status"></span>
+                </div>
+                <div class="admin-scan-actions">
+                    <button type="button" id="adminImportBtn" onclick="importBwwBaseline()" hidden>Import existing stores</button>
+                    <button type="button" id="adminGeoBtn" onclick="findScanCoordinates()" hidden>Find coordinates</button>
+                    <button type="button" id="adminApproveAllBtn" onclick="approveAllScan()" hidden>Approve all with coordinates</button>
                 </div>
                 <p class="hint">Checks BWW's public store list for new PA and NJ stores. It also runs by itself every week. Approve a store to add it to the map, or reject it to hide it for good.</p>
                 <table class="admin-users-table">
