@@ -164,3 +164,11 @@ This file explains the main HTML, CSS, JavaScript, and server pieces in plain la
 - Only the `public/` folder is published by Netlify (`netlify.toml`). Root files such as `server.js`, the `*.sql` files and these notes are not downloadable from the site.
 - Server code lives in `netlify/functions/` and `netlify/lib/`. Run its tests with `npm test`.
 - Local static serving: `node server.js` (serves `public/` only; the login functions need `npx netlify dev`).
+
+## Weekly BWW new-store scan
+
+- `netlify/lib/bwwscan.js` reads BWW's public sitemap (`buffalowildwings.com/locations.xml`), and queues PA/NJ stores it has not seen before. The first run only records a baseline.
+- `netlify/functions/bww-scan.js` runs it weekly (schedule in `netlify.toml`). Admins can also click **Scan now** in Admin > New BWW stores.
+- New stores land in a pending list. Approving one adds it to Locations (type `bww_pa` or `bww_nj`); rejecting hides it for good.
+- Setup: run `supabase-bww-scan.sql` in Supabase, deploy, then click Scan now once to record the baseline.
+- If BWW changes its sitemap (fewer than 30 PA/NJ stores found) the scan stops and saves nothing.

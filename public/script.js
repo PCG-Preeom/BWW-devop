@@ -433,7 +433,135 @@ function switchAdminTab(tabId) {
     document.querySelectorAll('.admin-tab-panel').forEach((el) => { el.hidden = el.id !== tabId; });
     document.querySelectorAll('.admin-tab').forEach((btn) => { btn.classList.toggle('active', btn.dataset.tab === tabId); });
     if (tabId === 'adminUsersTab') loadAdminUsers();
+    else if (tabId === 'adminScanTab') loadBwwScan();
     else loadAdminLocations();
+}
+
+// ---------- New BWW stores (weekly scan review) ----------
+function setScanBadge(count) {
+    const badge = document.getElementById('adminScanBadge');
+    if (!badge) return;
+    badge.textContent = String(count);
+    badge.hidden = !count;
+}
+
+async function refreshScanBadge() {
+    const res = await authFetch('/.netlify/functions/admin-bww-scan').catch(() => null);
+    if (!res?.ok) return;
+    const { pending } = await res.json();
+    setScanBadge(pending.length);
+}
+
+async function loadBwwScan() {
+    const body = document.getElementById('adminScanBody');
+    const status = document.getElementById('adminScanStatus');
+    if (!body || !status) return;
+    body.textContent = '';
+    const res = await authFetch('/.netlify/functions/admin-bww-scan').catch(() => null);
+    if (!res?.ok) {
+        status.textContent = 'Could not load the scan. Has supabase-bww-scan.sql been run?';
+        return;
+    }
+    const { pending, lastRun } = await res.json();
+    status.textContent = lastRun
+        ? `Last scan ${new Date(lastRun.ran_at).toLocaleString()}: ${lastRun.total} stores listed, ${lastRun.new_count} new.`
+        : 'No scan has run yet. Click Scan now to record the current list as a baseline.';
+    setScanBadge(pending.length);
+
+    if (!pending.length) {
+        const tr = document.createElement('tr');
+        const td = document.createElement('td');
+        td.colSpan = 3;
+        td.textContent = 'No new stores waiting for review.';
+        tr.append(td);
+        body.append(tr);
+        return;
+    }
+    pending.forEach((row) => body.append(renderScanRow(row)));
+}
+
+function renderScanRow(row) {
+    const tr = document.createElement('tr');
+
+    const storeTd = document.createElement('td');
+    const title = document.createElement('b');
+    title.textContent = `${row.city}, ${row.state.toUpperCase()}`;
+    storeTd.append(title, document.createElement('br'), document.createTextNode(`${row.address} (store ${row.store_id}) `));
+    if (row.source_url) {
+        const link = document.createElement('a');
+        link.href = row.source_url;
+        link.target = '_blank';
+        link.rel = 'noopener noreferrer';
+        link.textContent = 'BWW page';
+        storeTd.append(link);
+    }
+    tr.append(storeTd);
+
+    const coordsTd = document.createElement('td');
+    const latInput = document.createElement('input');
+    const lngInput = document.createElement('input');
+    [[latInput, 'Latitude', row.lat], [lngInput, 'Longitude', row.lng]].forEach(([input, label, value]) => {
+        input.type = 'number';
+        input.step = 'any';
+        input.placeholder = label;
+        input.setAttribute('aria-label', label);
+        input.value = value ?? '';
+        input.className = 'admin-scan-coord';
+    });
+    coordsTd.append(latInput, lngInput);
+    tr.append(coordsTd);
+
+    const actionsTd = document.createElement('td');
+    const approveBtn = document.createElement('button');
+    approveBtn.textContent = 'Approve';
+    approveBtn.addEventListener('click', () => reviewScanRow(row, 'approve', { lat: latInput.value, lng: lngInput.value }));
+    const rejectBtn = document.createElement('button');
+    rejectBtn.textContent = 'Reject';
+    rejectBtn.className = 'danger';
+    rejectBtn.addEventListener('click', () => reviewScanRow(row, 'reject', {}));
+    actionsTd.append(approveBtn, rejectBtn);
+    tr.append(actionsTd);
+    return tr;
+}
+
+async function postScanAction(payload) {
+    const res = await authFetch('/.netlify/functions/admin-bww-scan', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+    }).catch(() => null);
+    const data = res ? await res.json().catch(() => ({})) : {};
+    return { ok: !!res?.ok, data };
+}
+
+async function reviewScanRow(row, action, extra) {
+    const status = document.getElementById('adminScanStatus');
+    if (action === 'reject' && !window.confirm(`Reject ${row.city}, ${row.state.toUpperCase()}? It will not be suggested again.`)) return;
+    const { ok, data } = await postScanAction({ action, id: row.id, ...extra });
+    if (!ok) {
+        status.textContent = data.message || 'That did not work. Please try again.';
+        return;
+    }
+    if (action === 'approve') refreshMapData();
+    loadBwwScan();
+}
+
+async function runBwwScan() {
+    const button = document.getElementById('adminScanBtn');
+    const status = document.getElementById('adminScanStatus');
+    button.disabled = true;
+    status.textContent = 'Scanning BWW store list... this can take up to 30 seconds.';
+    const { ok, data } = await postScanAction({ action: 'scan' });
+    button.disabled = false;
+    if (!ok) {
+        status.textContent = data.message || 'The scan failed. Please try again later.';
+        return;
+    }
+    await loadBwwScan();
+    const r = data.result;
+    status.textContent = r.baseline
+        ? `Baseline saved: ${r.total} stores recorded. New stores will show up here from now on.`
+        : `Scan finished: ${r.newCount} new store${r.newCount === 1 ? '' : 's'} found (${r.total} listed).`;
 }
 
 function openAdminPanel() {
@@ -441,6 +569,7 @@ function openAdminPanel() {
     document.getElementById('adminOverlay').hidden = false;
     cancelLocationEdit();
     switchAdminTab('adminUsersTab');
+    refreshScanBadge();
 }
 
 function closeAdminPanel() {
