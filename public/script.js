@@ -1326,30 +1326,39 @@ function applyLocationFilters() {
 const mpRadiusCircles = [];
 let radiusCircle = null, routeLine = null;
 
+// Temporary radius the user drew around the selected MP (null = show the saved radius only).
+let customRadiusMiles = null;
+const MIN_CUSTOM_RADIUS = 0.1;
+const MAX_CUSTOM_RADIUS = 50;
+
 function getSelectedRadiusCenter() {
     return ALL[+document.getElementById('radiusCenter').value];
 }
 
 function getSelectedRadiusMiles() {
-    const p = getSelectedRadiusCenter();
-    if (p && p.type === 'MP' && Number.isFinite(p.radiusMiles)) {
-        return p.radiusMiles;
-    }
-    return parseFloat(document.getElementById('radiusMiles').value) || 0;
+    return parseFloat(document.getElementById('radiusMiles').value);
 }
 
 function updateRadiusMilesInput() {
     const radiusMilesInput = document.getElementById('radiusMiles');
     const p = getSelectedRadiusCenter();
 
+    removeRadiusCircle();
+    customRadiusMiles = null;
+    setRadiusMessage('');
+    radiusMilesInput.readOnly = false;
+
     if (p && p.type === 'MP' && Number.isFinite(p.radiusMiles)) {
         radiusMilesInput.value = p.radiusMiles;
-        radiusMilesInput.readOnly = true;
-        radiusMilesInput.title = `${p.id} has a fixed PDF radius of ${p.radiusMiles} miles.`;
+        radiusMilesInput.title = `${p.id} has a saved radius of ${p.radiusMiles} miles. Type a larger radius and press Draw to compare.`;
     } else {
-        radiusMilesInput.readOnly = false;
         radiusMilesInput.title = '';
     }
+}
+
+function setRadiusMessage(text) {
+    const message = document.getElementById('radiusMessage');
+    if (message) message.textContent = text;
 }
 
 function getNearest(items, point) {
@@ -1377,12 +1386,16 @@ function updateMPSummary() {
     const visibleDunkin = ALL_DUNKIN.filter(isVisibleLocation);
     const nearestBWW = getNearest(visibleBWW, mp);
     const nearestDunkin = getNearest(visibleDunkin, mp);
-    const bwwInRadius = visibleBWW.filter(bww => haversine(mp, bww) <= mp.radiusMiles);
-    const dunkinInRadius = visibleDunkin.filter(dunkin => haversine(mp, dunkin) <= mp.radiusMiles);
+    const radius = customRadiusMiles ?? mp.radiusMiles;
+    const bwwInRadius = visibleBWW.filter(bww => haversine(mp, bww) <= radius);
+    const dunkinInRadius = visibleDunkin.filter(dunkin => haversine(mp, dunkin) <= radius);
+    const radiusLine = customRadiusMiles === null
+        ? `<b>Radius:</b> ${formatMiles(mp.radiusMiles)}`
+        : `<b>Custom radius:</b> ${formatMiles(customRadiusMiles)} (saved: ${formatMiles(mp.radiusMiles)})`;
 
     out.innerHTML = `
         <b>${mp.id}</b><br>
-        <b>Radius:</b> ${formatMiles(mp.radiusMiles)}<br>
+        ${radiusLine}<br>
         <b>BWW inside radius:</b> ${bwwInRadius.length}<br>
         <b>Dunkin inside radius:</b> ${dunkinInRadius.length}<br>
         ${formatNearest('BWW', nearestBWW)}
@@ -1546,28 +1559,50 @@ function drawAllMPRadii() {
 
 // Function to draw radius circle around selected center
 function drawRadius() {
-    clearRadius();
     const p = getSelectedRadiusCenter();
     const miles = getSelectedRadiusMiles();
     if (!p) return;
 
-    document.getElementById('radiusMiles').value = miles;
+    if (!Number.isFinite(miles) || miles < MIN_CUSTOM_RADIUS || miles > MAX_CUSTOM_RADIUS) {
+        setRadiusMessage(`Enter a radius between ${MIN_CUSTOM_RADIUS} and ${MAX_CUSTOM_RADIUS} miles.`);
+        return;
+    }
+    setRadiusMessage('');
+    removeRadiusCircle();
+
+    const isMP = p.type === 'MP' && Number.isFinite(p.radiusMiles);
+    customRadiusMiles = isMP && miles !== p.radiusMiles ? miles : null;
+
     radiusCircle = L.circle([p.lat, p.lng], {
         radius: miles * 1609.344, // Convert miles to meters
-        color: '#111827',
-        fillColor: '#60a5fa',
+        color: isMP ? '#b45309' : '#111827',
+        dashArray: isMP ? '6 6' : null,
+        fillColor: isMP ? '#f59e0b' : '#60a5fa',
         fillOpacity: 0.12,
         weight: 2
     }).addTo(map);
     map.fitBounds(radiusCircle.getBounds());
+    updateMPSummary();
 }
 
-// Function to clear the radius circle
-function clearRadius() {
+function removeRadiusCircle() {
     if (radiusCircle) {
         map.removeLayer(radiusCircle);
         radiusCircle = null;
     }
+}
+
+// Function to clear the radius circle (and reset an MP back to its saved radius)
+function clearRadius() {
+    removeRadiusCircle();
+    customRadiusMiles = null;
+    setRadiusMessage('');
+
+    const p = getSelectedRadiusCenter();
+    if (p && p.type === 'MP' && Number.isFinite(p.radiusMiles)) {
+        document.getElementById('radiusMiles').value = p.radiusMiles;
+    }
+    updateMPSummary();
 }
 
 // Function to clear the route line and reset result text

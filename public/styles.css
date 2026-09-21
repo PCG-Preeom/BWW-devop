@@ -1390,7 +1390,9 @@ body.dark-mode .county-location-jump:hover {
 }
 
 .radius-manual-controls {
-    display: none;
+    display: grid;
+    gap: 8px;
+    margin-top: 12px;
 }
 
 .utility-hidden {
