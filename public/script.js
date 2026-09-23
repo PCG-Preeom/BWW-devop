@@ -918,8 +918,26 @@ function setupAccessPrompt() {
             submitBtn.classList.add('is-denied');
             setTimeout(() => submitBtn.classList.remove('is-denied'), 400);
         }
+        const panel = document.getElementById('accessForm');
+        if (panel) {
+            panel.classList.remove('access-error-pulse');
+            void panel.offsetWidth;
+            panel.classList.add('access-error-pulse');
+            setTimeout(() => panel.classList.remove('access-error-pulse'), 600);
+        }
         if (message) message.textContent = 'Invalid username or password.';
         input?.select();
+    });
+
+    const toggleBtn = document.getElementById('togglePasswordBtn');
+    toggleBtn?.addEventListener('click', () => {
+        const showing = input.type === 'text';
+        input.type = showing ? 'password' : 'text';
+        toggleBtn.setAttribute('aria-pressed', String(!showing));
+        toggleBtn.setAttribute('aria-label', showing ? 'Show password' : 'Hide password');
+        const icon = toggleBtn.querySelector('i');
+        if (icon) icon.className = showing ? 'fas fa-eye' : 'fas fa-eye-slash';
+        input.focus();
     });
 }
 

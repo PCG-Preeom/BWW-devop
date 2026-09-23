@@ -15,21 +15,31 @@
 </head>
 <body class="auth-locked">
     <section class="access-screen" aria-label="Access prompt">
+        <div class="access-embers" aria-hidden="true">
+            <span></span><span></span><span></span><span></span><span></span>
+        </div>
         <form class="access-panel" id="accessForm">
             <div class="pcg-logo" aria-hidden="true">
                 <img src="unnamed.png" alt="">
             </div>
             <h1>People Capital Group</h1>
             <label for="accessUsername">Username</label>
-            <div class="access-input-row">
-                <input id="accessUsername" type="text" placeholder="Username" autocomplete="username">
+            <div class="access-input-row access-row-1">
+                <div class="access-input-wrap">
+                    <i class="fas fa-user access-input-icon" aria-hidden="true"></i>
+                    <input id="accessUsername" type="text" placeholder="Username" autocomplete="username">
+                </div>
             </div>
             <label for="accessToken">Password</label>
-            <div class="access-input-row">
-                <input id="accessToken" type="password" placeholder="Password" autocomplete="current-password">
+            <div class="access-input-row access-row-2">
+                <div class="access-input-wrap">
+                    <i class="fas fa-lock access-input-icon" aria-hidden="true"></i>
+                    <input id="accessToken" type="password" placeholder="Password" autocomplete="current-password">
+                    <button type="button" class="access-toggle-password" id="togglePasswordBtn" aria-label="Show password" aria-pressed="false"><i class="fas fa-eye" aria-hidden="true"></i></button>
+                </div>
                 <button type="submit" aria-label="Log in"><i class="fas fa-lock"></i></button>
             </div>
-            <label class="access-remember">
+            <label class="access-remember access-row-3">
                 <input type="checkbox" id="rememberUsername">
                 Remember username
             </label>
@@ -52,7 +62,7 @@
                         <button class="icon-btn" id="presentationToggle" onclick="togglePresentationView()" title="Presentation View" aria-label="Toggle presentation view"><i class="fas fa-expand"></i></button>
                         <button class="icon-btn" id="themeToggle" onclick="toggleDarkMode()" title="Toggle Dark Mode" aria-label="Toggle dark mode"><i class="fas fa-moon"></i></button>
                         </div>
-                        <div class="version-badge">v3.7</div>
+                        <div class="version-badge">v3.8</div>
                     </div>
                 </div>
                 <details class="legend-details">

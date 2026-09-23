@@ -3185,3 +3185,180 @@ body.dark-mode .marker-cluster-large div {
 .radius-drag-handle:active {
     cursor: grabbing;
 }
+
+/* Login screen: entrance animation, icons, password toggle, ambient embers */
+.access-panel {
+    position: relative;
+    z-index: 1;
+    animation: accessPanelIn 0.55s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.pcg-logo {
+    animation: accessLogoIn 0.6s ease-out 0.08s both;
+}
+
+.access-panel h1 {
+    animation: accessFieldIn 0.45s ease-out 0.18s both;
+}
+
+.access-row-1 {
+    animation: accessFieldIn 0.45s ease-out 0.26s both;
+}
+
+.access-row-2 {
+    animation: accessFieldIn 0.45s ease-out 0.33s both;
+}
+
+.access-remember.access-row-3 {
+    animation: accessFieldIn 0.4s ease-out 0.4s both;
+}
+
+@keyframes accessPanelIn {
+    0%   { opacity: 0; transform: translateY(18px) scale(0.96); }
+    100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes accessLogoIn {
+    0%   { opacity: 0; transform: scale(0.7); filter: brightness(1.8); }
+    60%  { opacity: 1; }
+    100% { opacity: 1; transform: scale(1); filter: brightness(1); }
+}
+
+@keyframes accessFieldIn {
+    0%   { opacity: 0; transform: translateY(10px); }
+    100% { opacity: 1; transform: translateY(0); }
+}
+
+/* Input icons and password show/hide toggle */
+.access-input-wrap {
+    position: relative;
+    display: flex;
+    align-items: center;
+    min-width: 0;
+}
+
+.access-input-icon {
+    position: absolute;
+    left: 14px;
+    color: rgba(212, 175, 55, 0.65);
+    font-size: 13px;
+    pointer-events: none;
+}
+
+body.auth-locked .access-input-row input {
+    padding-left: 38px;
+}
+
+body.auth-locked .access-input-row #accessToken {
+    padding-right: 36px;
+}
+
+/* Fully-qualified selector: overrides body.auth-locked .access-input-row button's
+   gold/44px styling, since this toggle is also a <button> inside that same row. */
+body.auth-locked .access-input-row button.access-toggle-password {
+    position: absolute;
+    right: 8px;
+    min-height: 0;
+    width: 26px;
+    height: 26px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    margin: 0;
+    color: rgba(212, 175, 55, 0.7);
+    background: transparent;
+    border: 0;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: color 0.15s ease;
+}
+
+body.auth-locked .access-input-row button.access-toggle-password:hover {
+    color: #d4af37;
+    background: transparent;
+}
+
+.access-toggle-password:focus-visible {
+    outline: 2px solid #d4af37;
+    outline-offset: 1px;
+}
+
+/* Clearer, more visible focus ring than the plain inset line */
+body.auth-locked .access-input-row input:focus {
+    border: 0;
+    box-shadow: inset 0 0 0 1.5px rgba(212, 175, 55, 0.6), 0 0 0 3px rgba(212, 175, 55, 0.18);
+}
+
+/* Gentle press feedback on the login button (layers on top of the lock/unlock animation) */
+body.auth-locked .access-input-row button[type="submit"] {
+    transition: transform 0.12s ease, background 0.2s ease, box-shadow 0.25s ease;
+}
+
+body.auth-locked .access-input-row button[type="submit"]:active {
+    transform: scale(0.94);
+}
+
+/* Wrong password: one brief red pulse around the whole panel, in addition to the button shake */
+@keyframes accessErrorPulse {
+    0%   { box-shadow: inset 0 0 0 1px rgba(255, 232, 150, 0.28), 0 0 28px rgba(212, 175, 55, 0.24), 0 10px 25px rgba(0, 0, 0, 0.5); }
+    30%  { box-shadow: inset 0 0 0 1.5px rgba(248, 113, 113, 0.85), 0 0 34px rgba(239, 68, 68, 0.45), 0 10px 25px rgba(0, 0, 0, 0.5); }
+    100% { box-shadow: inset 0 0 0 1px rgba(255, 232, 150, 0.28), 0 0 28px rgba(212, 175, 55, 0.24), 0 10px 25px rgba(0, 0, 0, 0.5); }
+}
+
+.access-panel.access-error-pulse {
+    animation: accessErrorPulse 0.6s ease;
+}
+
+/* Ambient embers: a handful of soft gold specks that drift in once and settle (not a looping effect) */
+.access-embers {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    overflow: hidden;
+    pointer-events: none;
+}
+
+.access-embers span {
+    position: absolute;
+    width: 4px;
+    height: 4px;
+    background: #d4af37;
+    border-radius: 50%;
+    opacity: 0;
+    box-shadow: 0 0 8px 2px rgba(212, 175, 55, 0.65);
+    animation: emberDrift 3.2s ease-out both;
+}
+
+.access-embers span:nth-child(1) { top: 22%; left: 18%; animation-delay: 0.1s; }
+.access-embers span:nth-child(2) { top: 68%; left: 78%; animation-delay: 0.5s; }
+.access-embers span:nth-child(3) { top: 78%; left: 28%; animation-delay: 0.9s; }
+.access-embers span:nth-child(4) { top: 15%; left: 82%; animation-delay: 1.3s; }
+.access-embers span:nth-child(5) { top: 46%; left: 8%; animation-delay: 1.7s; }
+
+@keyframes emberDrift {
+    0%   { opacity: 0; transform: translateY(26px); }
+    35%  { opacity: 0.85; }
+    100% { opacity: 0.22; transform: translateY(-40px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .access-panel,
+    .pcg-logo,
+    .access-panel h1,
+    .access-row-1,
+    .access-row-2,
+    .access-remember.access-row-3,
+    .access-embers span {
+        animation: none;
+        opacity: 1;
+        transform: none;
+        filter: none;
+    }
+    .access-panel.access-error-pulse {
+        animation: none;
+    }
+    body.auth-locked .access-input-row button[type="submit"]:active {
+        transform: none;
+    }
+}
