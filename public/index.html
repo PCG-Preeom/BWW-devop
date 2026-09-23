@@ -52,7 +52,7 @@
                         <button class="icon-btn" id="presentationToggle" onclick="togglePresentationView()" title="Presentation View" aria-label="Toggle presentation view"><i class="fas fa-expand"></i></button>
                         <button class="icon-btn" id="themeToggle" onclick="toggleDarkMode()" title="Toggle Dark Mode" aria-label="Toggle dark mode"><i class="fas fa-moon"></i></button>
                         </div>
-                        <div class="version-badge">v3.5</div>
+                        <div class="version-badge">v3.6</div>
                     </div>
                 </div>
                 <details class="legend-details">
@@ -85,6 +85,7 @@
                     <label><input type="radio" name="locationSearchType" value="Dunkin" onchange="applySearchLocationFilter()"> <span><i class="fas fa-mug-hot"></i> Dunkin</span></label>
                 </fieldset>
                 <label for="locationSearch">Matching locations</label>
+                <input id="locationSearchQuery" type="text" placeholder="Search by name, ID or address..." oninput="fillLocationSearchSelect()">
                 <select id="locationSearch" onchange="previewSelectedLocation()"></select>
                 <div id="locationSearchSummary" class="hint"></div>
                 <button class="primary" onclick="jumpToLocation()"><i class="fas fa-location-crosshairs"></i> Jump To Location</button>

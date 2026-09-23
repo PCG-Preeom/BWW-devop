@@ -1674,9 +1674,11 @@ function fillLocationSearchSelect() {
     if (!locationSearch) return;
 
     const previousValue = locationSearch.value;
+    const query = (document.getElementById('locationSearchQuery')?.value || '').trim().toLowerCase();
     const matches = ALL
         .filter(isVisibleLocation)
-        .filter(p => brandOf(p) === locationSearchType);
+        .filter(p => brandOf(p) === locationSearchType)
+        .filter(p => !query || [p.name, p.id, p.address].filter(Boolean).join(' ').toLowerCase().includes(query));
 
     locationSearch.innerHTML = '';
     matches.forEach((p) => {
@@ -1691,9 +1693,10 @@ function fillLocationSearchSelect() {
     }
 
     if (summary) {
+        const suffix = query ? ` for "${query}"` : '';
         summary.textContent = matches.length
-            ? `${matches.length} matching ${locationSearchType}.`
-            : `No matching ${locationSearchType}. Check the visible location filters above.`;
+            ? `${matches.length} matching ${locationSearchType}${suffix}.`
+            : `No matching ${locationSearchType}${suffix}. Check the visible location filters above.`;
     }
 
     if (button) {
