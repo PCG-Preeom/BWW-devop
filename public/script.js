@@ -752,6 +752,14 @@ function setupAdminPanel() {
     setupAdminLocationsPanel();
 }
 
+// Swaps the lock icon for an open-lock icon with a pop/glow, and waits for it to play out.
+function playUnlockAnimation(button) {
+    if (!button) return Promise.resolve();
+    button.querySelector('i')?.classList.replace('fa-lock', 'fa-lock-open');
+    button.classList.add('is-unlocked');
+    return new Promise((resolve) => setTimeout(resolve, 450));
+}
+
 function setupAccessPrompt() {
     const form = document.getElementById('accessForm');
     const usernameInput = document.getElementById('accessUsername');
@@ -773,7 +781,11 @@ function setupAccessPrompt() {
         const password = input?.value || '';
         if (!username || !password) return;
 
-        if (submitBtn) submitBtn.disabled = true;
+        if (submitBtn) {
+            submitBtn.disabled = true;
+            submitBtn.classList.remove('is-unlocked', 'is-denied');
+            submitBtn.querySelector('i')?.classList.replace('fa-lock-open', 'fa-lock');
+        }
         if (message) message.textContent = '';
 
         let success = false;
@@ -800,11 +812,16 @@ function setupAccessPrompt() {
         if (success) {
             if (rememberCheckbox?.checked) localStorage.setItem(REMEMBERED_USERNAME_KEY, username);
             else localStorage.removeItem(REMEMBERED_USERNAME_KEY);
+            await playUnlockAnimation(submitBtn);
             unlockMap();
             return;
         }
 
-        if (submitBtn) submitBtn.disabled = false;
+        if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.classList.add('is-denied');
+            setTimeout(() => submitBtn.classList.remove('is-denied'), 400);
+        }
         if (message) message.textContent = 'Invalid username or password.';
         input?.select();
     });

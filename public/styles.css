@@ -2964,3 +2964,38 @@ body.dark-mode .brand-actions .icon-btn:hover {
 
 .admin-scan-actions button[hidden] { display: none; }
 .admin-scan-actions button { width: auto; flex: 0 0 auto; }
+
+/* Login button: lock -> unlock animation */
+body.auth-locked .access-input-row button i {
+    display: inline-block;
+    transition: transform 0.15s ease;
+}
+
+@keyframes lockUnlockPop {
+    0%   { transform: scale(1) rotate(0deg); }
+    30%  { transform: scale(0.7) rotate(-10deg); }
+    65%  { transform: scale(1.35) rotate(8deg); }
+    100% { transform: scale(1) rotate(0deg); }
+}
+
+body.auth-locked .access-input-row button.is-unlocked {
+    background: #2fae63;
+    box-shadow: 0 0 0 4px rgba(47, 174, 99, 0.30), 0 0 18px rgba(47, 174, 99, 0.55);
+    transition: background 0.25s ease, box-shadow 0.25s ease;
+}
+
+body.auth-locked .access-input-row button.is-unlocked i {
+    animation: lockUnlockPop 0.45s ease;
+}
+
+@keyframes lockDeniedShake {
+    0%, 100% { transform: translateX(0); }
+    20%      { transform: translateX(-4px); }
+    40%      { transform: translateX(4px); }
+    60%      { transform: translateX(-3px); }
+    80%      { transform: translateX(3px); }
+}
+
+body.auth-locked .access-input-row button.is-denied {
+    animation: lockDeniedShake 0.4s ease;
+}

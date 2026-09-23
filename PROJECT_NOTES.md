@@ -174,3 +174,4 @@ This file explains the main HTML, CSS, JavaScript, and server pieces in plain la
 - If BWW changes its sitemap (fewer than 30 PA/NJ stores found) the scan stops and saves nothing.
 - Existing PA/NJ stores are not pinned automatically. In Admin > New BWW stores: **Import existing stores** (moves the baseline into the list, skipping stores already on the map), **Find coordinates** (looks up addresses from the browser, about one per second), then **Approve all with coordinates** (adds them to the map; anything within 0.1 mile of an existing BWW pin is skipped as a duplicate).
 - Territory Tools: BWW locations can now be picked as the radius center too, not just MP. BWW has no saved radius, so the box defaults to 5 miles; any radius from 0.1 to 50 miles can be drawn.
+- Login button: clicking it with a correct password plays a lock-to-unlock icon animation (green glow) before the screen transitions; a wrong password shakes the button and keeps it locked.
