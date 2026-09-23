@@ -1598,6 +1598,8 @@ let radiusCircle = null, routeLine = null;
 
 // Temporary radius the user drew around the selected MP (null = show the saved radius only).
 let customRadiusMiles = null;
+// ALL-index of the location whose baseline circle is currently replaced by the drawn radiusCircle.
+let activeRadiusCenterIndex = null;
 const MIN_CUSTOM_RADIUS = 0.1;
 const MAX_CUSTOM_RADIUS = 50;
 
@@ -1615,18 +1617,23 @@ function updateRadiusMilesInput() {
 
     removeRadiusCircle();
     customRadiusMiles = null;
+    activeRadiusCenterIndex = null;
     setRadiusMessage('');
     radiusMilesInput.readOnly = false;
 
     if (p && p.type === 'MP' && Number.isFinite(p.radiusMiles)) {
         radiusMilesInput.value = p.radiusMiles;
-        radiusMilesInput.title = `${p.id} has a saved radius of ${p.radiusMiles} miles. Type a larger radius and press Draw to compare.`;
+        radiusMilesInput.title = `${p.id} has a saved radius of ${p.radiusMiles} miles. Type a different radius and press Draw to update it.`;
     } else if (p) {
-        radiusMilesInput.value = 5;
-        radiusMilesInput.title = 'BWW locations have no saved radius. Type any radius from 0.1 to 50 miles and press Draw.';
+        radiusMilesInput.value = DEFAULT_BWW_RADIUS_MILES;
+        radiusMilesInput.title = 'BWW locations default to a 5 mile radius. Type any radius from 0.1 to 50 miles and press Draw to update it.';
     } else {
         radiusMilesInput.title = '';
     }
+
+    // Restores whichever location's baseline circle was hidden by a previous custom draw.
+    drawAllMPRadii();
+    drawAllBWWRadii();
 }
 
 function setRadiusMessage(text) {
@@ -1819,6 +1826,7 @@ function drawAllMPRadii() {
 
     ALL_MP.forEach(p => {
         if (!Number.isFinite(p.radiusMiles)) return;
+        if (p === ALL[activeRadiusCenterIndex]) return; // replaced by the Territory Tools circle below
 
         const circle = L.circle([p.lat, p.lng], {
             radius: p.radiusMiles * 1609.344,
@@ -1834,8 +1842,8 @@ function drawAllMPRadii() {
 }
 
 // Every BWW gets the same default radius circle on the map, always on, so it's visible right
-// after login without opening Territory Tools. Territory Tools can still draw a bigger one-off
-// comparison circle for a specific store on top of this baseline.
+// after login without opening Territory Tools. Drawing a different radius in Territory Tools
+// for a specific BWW replaces its circle here rather than adding a second one on top.
 function drawAllBWWRadii() {
     bwwRadiusCircles.forEach(circle => map.removeLayer(circle));
     bwwRadiusCircles.length = 0;
@@ -1843,6 +1851,8 @@ function drawAllBWWRadii() {
     if (!BRAND_FILTERS.BWW) return;
 
     ALL_BWW.forEach(p => {
+        if (p === ALL[activeRadiusCenterIndex]) return; // replaced by the Territory Tools circle below
+
         const circle = L.circle([p.lat, p.lng], {
             radius: DEFAULT_BWW_RADIUS_MILES * 1609.344,
             color: '#b91c1c',
@@ -1851,7 +1861,7 @@ function drawAllBWWRadii() {
             weight: 1.5
         }).addTo(map);
 
-        circle.bindPopup(`<b>${p.name}</b><br>Default territory radius: ${DEFAULT_BWW_RADIUS_MILES} miles<br>Pick it in Territory Tools to draw a different radius.`);
+        circle.bindPopup(`<b>${p.name}</b><br>Default territory radius: ${DEFAULT_BWW_RADIUS_MILES} miles<br>Pick it in Territory Tools to change it.`);
         bwwRadiusCircles.push(circle);
     });
 }
@@ -1871,16 +1881,23 @@ function drawRadius() {
 
     const isMP = p.type === 'MP' && Number.isFinite(p.radiusMiles);
     customRadiusMiles = isMP && miles !== p.radiusMiles ? miles : null;
+    // Redrawing the baselines with this index set hides p's own default/saved circle below,
+    // so this one replaces it instead of sitting on top of it.
+    activeRadiusCenterIndex = ALL.indexOf(p);
 
-    radiusCircle = L.circle([p.lat, p.lng], {
-        radius: miles * 1609.344, // Convert miles to meters
-        color: isMP ? '#b45309' : '#111827',
-        dashArray: isMP ? '6 6' : null,
-        fillColor: isMP ? '#f59e0b' : '#60a5fa',
-        fillOpacity: 0.12,
-        weight: 2
-    }).addTo(map);
+    const style = isMP
+        ? { color: '#1e3a8a', fillColor: '#60a5fa', fillOpacity: 0.08 }
+        : { color: '#b91c1c', fillColor: '#f87171', fillOpacity: 0.06 };
+    radiusCircle = L.circle([p.lat, p.lng], { radius: miles * 1609.344, weight: 1.5, ...style }).addTo(map);
+    radiusCircle.bindPopup(
+        isMP && customRadiusMiles !== null
+            ? `<b>${p.id}</b><br>Territory radius: ${miles} miles (saved: ${p.radiusMiles} miles)`
+            : `<b>${p.name || p.id}</b><br>Territory radius: ${miles} miles`
+    );
     map.fitBounds(radiusCircle.getBounds());
+
+    drawAllMPRadii();
+    drawAllBWWRadii();
     updateMPSummary();
 }
 
@@ -1891,18 +1908,21 @@ function removeRadiusCircle() {
     }
 }
 
-// Function to clear the radius circle (and reset an MP back to its saved radius)
+// Function to clear the radius circle (and restore the location's default/saved circle)
 function clearRadius() {
     removeRadiusCircle();
     customRadiusMiles = null;
+    activeRadiusCenterIndex = null;
     setRadiusMessage('');
 
     const p = getSelectedRadiusCenter();
     if (p && p.type === 'MP' && Number.isFinite(p.radiusMiles)) {
         document.getElementById('radiusMiles').value = p.radiusMiles;
     } else if (p) {
-        document.getElementById('radiusMiles').value = 5;
+        document.getElementById('radiusMiles').value = DEFAULT_BWW_RADIUS_MILES;
     }
+    drawAllMPRadii();
+    drawAllBWWRadii();
     updateMPSummary();
 }
 
