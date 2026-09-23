@@ -821,6 +821,12 @@ function isVisibleLocation(p) {
     return BRAND_FILTERS[brandOf(p)] !== false;
 }
 
+// MP and BWW locations can anchor the Territory Tools radius circle; Dunkin cannot.
+function isTerritoryCenter(p) {
+    const brand = brandOf(p);
+    return brand === 'MP' || brand === 'BWW';
+}
+
 function visibleLocations() {
     return ALL.filter(isVisibleLocation);
 }
@@ -1167,7 +1173,7 @@ function jumpToCountyLocation(index) {
         locationSearch.value = String(index);
     }
 
-    if (location.type === 'MP') {
+    if (isTerritoryCenter(location)) {
         const radiusCenter = document.getElementById('radiusCenter');
         if (radiusCenter) {
             radiusCenter.value = String(index);
@@ -1407,10 +1413,12 @@ function addMarkers() {
                 locationSearch.value = i;
             }
 
-            if (p.type === 'MP') {
+            if (isTerritoryCenter(p)) {
                 document.getElementById('radiusCenter').value = i;
                 updateRadiusMilesInput();
                 updateMPSummary();
+            }
+            if (p.type === 'MP') {
                 document.getElementById('from').value = i;
             } else {
                 document.getElementById('to').value = i;
@@ -1460,13 +1468,25 @@ function fillSelects() {
     });
 
     radiusSelect.innerHTML = '';
+    const mpGroup = document.createElement('optgroup');
+    mpGroup.label = 'MP';
     ALL_MP.filter(isVisibleLocation).forEach(p => {
         const option = document.createElement('option');
-        const globalIndex = ALL.indexOf(p);
-        option.value = globalIndex;
+        option.value = ALL.indexOf(p);
         option.textContent = `${p.type} - ${p.id} (${p.radiusMiles} mi radius)`;
-        radiusSelect.appendChild(option);
+        mpGroup.appendChild(option);
     });
+    if (mpGroup.children.length) radiusSelect.appendChild(mpGroup);
+
+    const bwwGroup = document.createElement('optgroup');
+    bwwGroup.label = 'BWW';
+    ALL_BWW.filter(isVisibleLocation).forEach(p => {
+        const option = document.createElement('option');
+        option.value = ALL.indexOf(p);
+        option.textContent = locationSearchLabel(p);
+        bwwGroup.appendChild(option);
+    });
+    if (bwwGroup.children.length) radiusSelect.appendChild(bwwGroup);
 
     fillLocationSearchSelect();
 
@@ -1544,7 +1564,8 @@ function applyLocationFilters() {
 
     addMarkers();
     drawAllMPRadii();
-    if (!BRAND_FILTERS.MP) {
+    const currentCenter = getSelectedRadiusCenter();
+    if (currentCenter && !isVisibleLocation(currentCenter)) {
         clearRadius();
     }
     fillSelects();
@@ -1580,6 +1601,9 @@ function updateRadiusMilesInput() {
     if (p && p.type === 'MP' && Number.isFinite(p.radiusMiles)) {
         radiusMilesInput.value = p.radiusMiles;
         radiusMilesInput.title = `${p.id} has a saved radius of ${p.radiusMiles} miles. Type a larger radius and press Draw to compare.`;
+    } else if (p) {
+        radiusMilesInput.value = 5;
+        radiusMilesInput.title = 'BWW locations have no saved radius. Type any radius from 0.1 to 50 miles and press Draw.';
     } else {
         radiusMilesInput.title = '';
     }
@@ -1604,31 +1628,34 @@ function formatNearest(label, item) {
 
 function updateMPSummary() {
     const out = document.getElementById('mpSummary');
-    const mp = getSelectedRadiusCenter();
+    const center = getSelectedRadiusCenter();
     if (!out) return;
-    if (!mp || mp.type !== 'MP') {
-        out.textContent = 'Select an MP to see territory details.';
+    if (!center || !isTerritoryCenter(center)) {
+        out.textContent = 'Select an MP or BWW to see territory details.';
         return;
     }
 
-    const visibleBWW = ALL_BWW.filter(isVisibleLocation);
-    const visibleDunkin = ALL_DUNKIN.filter(isVisibleLocation);
-    const nearestBWW = getNearest(visibleBWW, mp);
-    const nearestDunkin = getNearest(visibleDunkin, mp);
-    const radius = customRadiusMiles ?? mp.radiusMiles;
-    const bwwInRadius = visibleBWW.filter(bww => haversine(mp, bww) <= radius);
-    const dunkinInRadius = visibleDunkin.filter(dunkin => haversine(mp, dunkin) <= radius);
-    const radiusLine = customRadiusMiles === null
-        ? `<b>Radius:</b> ${formatMiles(mp.radiusMiles)}`
-        : `<b>Custom radius:</b> ${formatMiles(customRadiusMiles)} (saved: ${formatMiles(mp.radiusMiles)})`;
+    const isMP = center.type === 'MP';
+    const radius = isMP ? (customRadiusMiles ?? center.radiusMiles) : getSelectedRadiusMiles();
+    const radiusLine = !isMP
+        ? `<b>Radius:</b> ${formatMiles(radius)}`
+        : customRadiusMiles === null
+            ? `<b>Radius:</b> ${formatMiles(center.radiusMiles)}`
+            : `<b>Custom radius:</b> ${formatMiles(customRadiusMiles)} (saved: ${formatMiles(center.radiusMiles)})`;
+
+    // Every other visible location, grouped by brand (excluding the center's own brand).
+    const others = ALL.filter(p => p !== center && isVisibleLocation(p));
+    const otherBrands = ['MP', 'BWW', 'Dunkin'].filter(b => b !== brandOf(center));
+    const rows = otherBrands.map(brand => {
+        const list = others.filter(p => brandOf(p) === brand);
+        const inRadius = Number.isFinite(radius) ? list.filter(p => haversine(center, p) <= radius) : [];
+        return `<b>${brand} inside radius:</b> ${inRadius.length}<br>${formatNearest(brand, getNearest(list, center))}`;
+    }).join('');
 
     out.innerHTML = `
-        <b>${mp.id}</b><br>
+        <b>${center.name || center.id}</b><br>
         ${radiusLine}<br>
-        <b>BWW inside radius:</b> ${bwwInRadius.length}<br>
-        <b>Dunkin inside radius:</b> ${dunkinInRadius.length}<br>
-        ${formatNearest('BWW', nearestBWW)}
-        ${formatNearest('Dunkin', nearestDunkin)}
+        ${rows}
     `;
 }
 
@@ -1671,7 +1698,7 @@ function jumpToLocation() {
     centerLocation(index, true);
     pulseLocationMarker(index);
 
-    if (p.type === 'MP') {
+    if (isTerritoryCenter(p)) {
         document.getElementById('radiusCenter').value = index;
         updateRadiusMilesInput();
         updateMPSummary();
@@ -1830,6 +1857,8 @@ function clearRadius() {
     const p = getSelectedRadiusCenter();
     if (p && p.type === 'MP' && Number.isFinite(p.radiusMiles)) {
         document.getElementById('radiusMiles').value = p.radiusMiles;
+    } else if (p) {
+        document.getElementById('radiusMiles').value = 5;
     }
     updateMPSummary();
 }
