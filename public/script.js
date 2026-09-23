@@ -991,6 +991,15 @@ let activeTiles = lightTiles.addTo(map);
 map.createPane('countyPane');
 map.getPane('countyPane').style.zIndex = 330;
 
+// Groups nearby MP/BWW/Dunkin markers into a count badge at low zoom; un-clusters automatically
+// once you zoom past disableClusteringAtZoom (individual-location zoom level used elsewhere, e.g. centerLocation).
+const markerClusterGroup = L.markerClusterGroup({
+    maxClusterRadius: 50,
+    disableClusteringAtZoom: 15,
+    spiderfyOnMaxZoom: true,
+    showCoverageOnHover: false
+}).addTo(map);
+
 // Array to hold markers
 const markers = [];
 const pinnedAddressMarkers = [];
@@ -1545,19 +1554,19 @@ function popup(p) {
 // Function to add markers to the map
 function addMarkers() {
     // Remove existing markers
-    markers.forEach(m => {
-        if (m) map.removeLayer(m);
-    });
+    markerClusterGroup.clearLayers();
     markers.length = 0;
 
-    // Add new markers
+    // Add new markers (added to the cluster group in one batch below, not to the map directly)
+    const newMarkers = [];
     ALL.forEach((p, i) => {
         if (!isVisibleLocation(p)) return;
 
-        const m = L.marker([p.lat, p.lng], { icon: icon(p) }).addTo(map).bindPopup(popup(p), {
+        const m = L.marker([p.lat, p.lng], { icon: icon(p) }).bindPopup(popup(p), {
             autoPan: false,
             keepInView: false
         });
+        m.bindTooltip(p.name || p.id, { direction: 'top', offset: [0, -14], className: 'map-marker-tooltip' });
         // When marker is clicked, select it for radius and route appropriately
         m.on('click', () => {
             const locationSearch = document.getElementById('locationSearch');
@@ -1577,7 +1586,9 @@ function addMarkers() {
             }
         });
         markers[i] = m;
+        newMarkers.push(m);
     });
+    markerClusterGroup.addLayers(newMarkers);
 
     // Fit map to bounds of all markers
     const visible = visibleLocations();
@@ -1821,14 +1832,34 @@ function updateMPSummary() {
     `;
 }
 
-function pulseLocationMarker(index) {
-    const markerElement = markers[index]?.getElement();
-    if (!markerElement) return;
+// The marker's DOM element may not exist for a moment while the cluster group is still
+// un-clustering after a zoom (e.g. right after centerLocation); retry a few animation frames.
+function pulseLocationMarker(index, attempt = 0) {
+    const marker = markers[index];
+    if (!marker) return;
+
+    const markerElement = marker.getElement();
+    if (!markerElement) {
+        if (attempt < 15) requestAnimationFrame(() => pulseLocationMarker(index, attempt + 1));
+        return;
+    }
 
     markerElement.classList.remove('location-marker-pulse');
     void markerElement.offsetWidth;
     markerElement.classList.add('location-marker-pulse');
     setTimeout(() => markerElement.classList.remove('location-marker-pulse'), 1200);
+}
+
+// Waits for the cluster group to un-cluster this marker (it's only a direct map layer once
+// visible on its own) before opening its popup, instead of opening a popup that can't show yet.
+function openMarkerPopupWhenReady(index, attempt = 0) {
+    const marker = markers[index];
+    if (!marker) return;
+    if (map.hasLayer(marker) || attempt >= 20) {
+        marker.openPopup();
+        return;
+    }
+    requestAnimationFrame(() => openMarkerPopupWhenReady(index, attempt + 1));
 }
 
 function centerLocation(index, openPopup = false) {
@@ -1839,7 +1870,7 @@ function centerLocation(index, openPopup = false) {
 
     if (openPopup) {
         setTimeout(() => {
-            markers[index]?.openPopup();
+            openMarkerPopupWhenReady(index);
             map.panTo([p.lat, p.lng], { animate: true });
         }, 260);
     }

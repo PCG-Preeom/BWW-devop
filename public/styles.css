@@ -3124,3 +3124,47 @@ body.auth-locked .access-input-row button.is-denied {
     opacity: 1;
     color: var(--blue);
 }
+
+/* Marker hover tooltip */
+.leaflet-tooltip.map-marker-tooltip {
+    padding: 4px 10px;
+    color: var(--text);
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    box-shadow: 0 6px 16px rgba(15, 23, 42, 0.20);
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.leaflet-tooltip.map-marker-tooltip::before {
+    border-top-color: var(--line);
+}
+
+/* Marker clustering: recolor the plugin's default circles to match the app accent */
+.marker-cluster-small,
+.marker-cluster-medium,
+.marker-cluster-large {
+    background-color: rgba(255, 103, 31, 0.25);
+}
+
+.marker-cluster-small div,
+.marker-cluster-medium div,
+.marker-cluster-large div {
+    color: #ffffff;
+    background-color: var(--blue);
+    font-weight: 700;
+}
+
+body.dark-mode .marker-cluster-small,
+body.dark-mode .marker-cluster-medium,
+body.dark-mode .marker-cluster-large {
+    background-color: rgba(212, 175, 55, 0.25);
+}
+
+body.dark-mode .marker-cluster-small div,
+body.dark-mode .marker-cluster-medium div,
+body.dark-mode .marker-cluster-large div {
+    color: #05070b;
+    background-color: var(--blue);
+}
