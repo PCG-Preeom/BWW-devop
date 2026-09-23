@@ -1581,6 +1581,7 @@ function applyLocationFilters() {
 
     addMarkers();
     drawAllMPRadii();
+    drawAllBWWRadii();
     const currentCenter = getSelectedRadiusCenter();
     if (currentCenter && !isVisibleLocation(currentCenter)) {
         clearRadius();
@@ -1591,6 +1592,8 @@ function applyLocationFilters() {
 
 // Variables for radius circles and route line
 const mpRadiusCircles = [];
+const bwwRadiusCircles = [];
+const DEFAULT_BWW_RADIUS_MILES = 5;
 let radiusCircle = null, routeLine = null;
 
 // Temporary radius the user drew around the selected MP (null = show the saved radius only).
@@ -1827,6 +1830,29 @@ function drawAllMPRadii() {
 
         circle.bindPopup(`<b>${p.id}</b><br>Fixed territory radius: ${p.radiusMiles} miles`);
         mpRadiusCircles.push(circle);
+    });
+}
+
+// Every BWW gets the same default radius circle on the map, always on, so it's visible right
+// after login without opening Territory Tools. Territory Tools can still draw a bigger one-off
+// comparison circle for a specific store on top of this baseline.
+function drawAllBWWRadii() {
+    bwwRadiusCircles.forEach(circle => map.removeLayer(circle));
+    bwwRadiusCircles.length = 0;
+
+    if (!BRAND_FILTERS.BWW) return;
+
+    ALL_BWW.forEach(p => {
+        const circle = L.circle([p.lat, p.lng], {
+            radius: DEFAULT_BWW_RADIUS_MILES * 1609.344,
+            color: '#b91c1c',
+            fillColor: '#f87171',
+            fillOpacity: 0.06,
+            weight: 1.5
+        }).addTo(map);
+
+        circle.bindPopup(`<b>${p.name}</b><br>Default territory radius: ${DEFAULT_BWW_RADIUS_MILES} miles<br>Pick it in Territory Tools to draw a different radius.`);
+        bwwRadiusCircles.push(circle);
     });
 }
 
@@ -2208,6 +2234,7 @@ async function initializeApp() {
     fillSelects();
     await loadCountyHighlights();
     drawAllMPRadii();
+    drawAllBWWRadii();
     loadPinnedAddresses();
 }
 
@@ -2217,6 +2244,7 @@ async function refreshMapData() {
         addMarkers();
         fillSelects();
         drawAllMPRadii();
+        drawAllBWWRadii();
     } catch {
         // Session likely expired; the next authenticated action will re-lock the app.
     }
