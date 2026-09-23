@@ -3097,3 +3097,30 @@ body.auth-locked .access-input-row button.is-denied {
     .map-loading-spinner { animation-duration: 1.6s; }
     .toast, .toast.is-leaving { animation: none; }
 }
+
+/* Admin tables: search box and sortable headers */
+.admin-table-filter {
+    width: 100%;
+    margin: 4px 0 10px;
+}
+
+.admin-users-table th.sortable {
+    cursor: pointer;
+    user-select: none;
+    white-space: nowrap;
+}
+
+.admin-users-table th.sortable:hover {
+    color: var(--blue);
+}
+
+.admin-users-table th.sortable i {
+    margin-left: 4px;
+    font-size: 11px;
+    opacity: 0.5;
+}
+
+.admin-users-table th.sortable.is-active i {
+    opacity: 1;
+    color: var(--blue);
+}

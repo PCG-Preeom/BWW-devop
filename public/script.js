@@ -234,6 +234,10 @@ function renderAdminUserRow(user) {
     return tr;
 }
 
+// Users table: fetched once per load, then filtered/sorted entirely client-side.
+let adminUsersData = [];
+let adminUsersSort = { key: 'username', dir: 1 };
+
 async function loadAdminUsers() {
     const body = document.getElementById('adminUsersBody');
     if (!body) return;
@@ -241,8 +245,52 @@ async function loadAdminUsers() {
 
     const res = await authFetch('/.netlify/functions/admin-users').catch(() => null);
     if (!res?.ok) return;
-    const { users } = await res.json();
-    users.forEach((user) => body.append(renderAdminUserRow(user)));
+    ({ users: adminUsersData } = await res.json());
+    renderAdminUsers();
+}
+
+function updateSortIcons(prefix, sort, keys) {
+    keys.forEach((key) => {
+        const icon = document.getElementById(`sortIcon-${prefix}-${key}`);
+        if (!icon) return;
+        const th = icon.closest('th');
+        const active = key === sort.key;
+        th?.classList.toggle('is-active', active);
+        icon.className = active ? `fas fa-sort-${sort.dir === 1 ? 'up' : 'down'}` : 'fas fa-sort';
+    });
+}
+
+function sortAdminUsers(key) {
+    adminUsersSort = { key, dir: adminUsersSort.key === key ? -adminUsersSort.dir : 1 };
+    renderAdminUsers();
+}
+
+function renderAdminUsers() {
+    const body = document.getElementById('adminUsersBody');
+    if (!body) return;
+
+    const query = (document.getElementById('adminUsersFilter')?.value || '').trim().toLowerCase();
+    const rows = adminUsersData
+        .filter((u) => !query || u.username.toLowerCase().includes(query) || u.role.toLowerCase().includes(query))
+        .sort((a, b) => {
+            const { key, dir } = adminUsersSort;
+            const va = key === 'active' ? Number(a.active) : String(a[key]).toLowerCase();
+            const vb = key === 'active' ? Number(b.active) : String(b[key]).toLowerCase();
+            return va < vb ? -dir : va > vb ? dir : 0;
+        });
+
+    updateSortIcons('users', adminUsersSort, ['username', 'role', 'active']);
+    body.textContent = '';
+    if (!rows.length) {
+        const tr = document.createElement('tr');
+        const td = document.createElement('td');
+        td.colSpan = 4;
+        td.textContent = adminUsersData.length ? 'No users match your search.' : 'No users yet.';
+        tr.append(td);
+        body.append(tr);
+        return;
+    }
+    rows.forEach((user) => body.append(renderAdminUserRow(user)));
 }
 
 async function setUserActive(id, active) {
@@ -383,6 +431,10 @@ function renderAdminLocationRow(loc) {
     return tr;
 }
 
+// Locations table: fetched once per type per load, then filtered/sorted client-side.
+let adminLocData = [];
+let adminLocSort = { key: 'label', dir: 1 };
+
 async function loadAdminLocations() {
     const body = document.getElementById('adminLocBody');
     if (!body) return;
@@ -390,8 +442,44 @@ async function loadAdminLocations() {
     const type = document.getElementById('adminLocType').value;
     const res = await authFetch(`/.netlify/functions/admin-locations?type=${encodeURIComponent(type)}`).catch(() => null);
     if (!res?.ok) return;
-    const { locations } = await res.json();
-    locations.forEach((loc) => body.append(renderAdminLocationRow(loc)));
+    ({ locations: adminLocData } = await res.json());
+    renderAdminLocations();
+}
+
+function sortAdminLocations(key) {
+    adminLocSort = { key, dir: adminLocSort.key === key ? -adminLocSort.dir : 1 };
+    renderAdminLocations();
+}
+
+function renderAdminLocations() {
+    const body = document.getElementById('adminLocBody');
+    if (!body) return;
+
+    const query = (document.getElementById('adminLocFilter')?.value || '').trim().toLowerCase();
+    const withLabel = adminLocData.map((loc) => ({ loc, label: locationRowLabel(loc) }));
+    const rows = withLabel
+        .filter(({ loc, label }) => !query
+            || label.toLowerCase().includes(query)
+            || (loc.address || '').toLowerCase().includes(query))
+        .sort((a, b) => {
+            const { key, dir } = adminLocSort;
+            const va = key === 'active' ? Number(a.loc.active) : a.label.toLowerCase();
+            const vb = key === 'active' ? Number(b.loc.active) : b.label.toLowerCase();
+            return va < vb ? -dir : va > vb ? dir : 0;
+        });
+
+    updateSortIcons('loc', adminLocSort, ['label', 'active']);
+    body.textContent = '';
+    if (!rows.length) {
+        const tr = document.createElement('tr');
+        const td = document.createElement('td');
+        td.colSpan = 3;
+        td.textContent = adminLocData.length ? 'No locations match your search.' : 'No locations of this type yet.';
+        tr.append(td);
+        body.append(tr);
+        return;
+    }
+    rows.forEach(({ loc }) => body.append(renderAdminLocationRow(loc)));
 }
 
 function startLocationEdit(loc) {

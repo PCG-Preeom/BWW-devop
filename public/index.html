@@ -206,12 +206,13 @@
                 </form>
                 <div id="adminFormMessage" class="admin-form-message"></div>
 
+                <input id="adminUsersFilter" type="text" class="admin-table-filter" placeholder="Search users..." oninput="renderAdminUsers()">
                 <table class="admin-users-table">
                     <thead>
                         <tr>
-                            <th>Username</th>
-                            <th>Role</th>
-                            <th>Status</th>
+                            <th class="sortable" onclick="sortAdminUsers('username')">Username <i class="fas fa-sort" id="sortIcon-users-username"></i></th>
+                            <th class="sortable" onclick="sortAdminUsers('role')">Role <i class="fas fa-sort" id="sortIcon-users-role"></i></th>
+                            <th class="sortable" onclick="sortAdminUsers('active')">Status <i class="fas fa-sort" id="sortIcon-users-active"></i></th>
                             <th></th>
                         </tr>
                     </thead>
@@ -236,11 +237,12 @@
                 </form>
                 <div id="adminLocFormMessage" class="admin-form-message"></div>
 
+                <input id="adminLocFilter" type="text" class="admin-table-filter" placeholder="Search locations..." oninput="renderAdminLocations()">
                 <table class="admin-users-table">
                     <thead>
                         <tr>
-                            <th>Location</th>
-                            <th>Status</th>
+                            <th class="sortable" onclick="sortAdminLocations('label')">Location <i class="fas fa-sort" id="sortIcon-loc-label"></i></th>
+                            <th class="sortable" onclick="sortAdminLocations('active')">Status <i class="fas fa-sort" id="sortIcon-loc-active"></i></th>
                             <th></th>
                         </tr>
                     </thead>
