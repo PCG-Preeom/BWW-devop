@@ -246,11 +246,12 @@ async function loadAdminUsers() {
 }
 
 async function setUserActive(id, active) {
-    await authFetch('/.netlify/functions/admin-users', {
+    const res = await authFetch('/.netlify/functions/admin-users', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id, active }),
     }).catch(() => null);
+    await toastAdminResult(res, active ? 'User enabled.' : 'User disabled.', 'Could not update the user.');
     loadAdminUsers();
 }
 
@@ -261,17 +262,19 @@ async function resetUserPassword(id) {
         window.alert('Password must be at least 8 characters.');
         return;
     }
-    await authFetch('/.netlify/functions/admin-users', {
+    const res = await authFetch('/.netlify/functions/admin-users', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id, temp_password: next }),
     }).catch(() => null);
+    await toastAdminResult(res, 'Temporary password set.', 'Could not reset the password.');
     loadAdminUsers();
 }
 
 async function deleteUserAccount(id, username) {
     if (!window.confirm(`Delete user "${username}"? This cannot be undone.`)) return;
-    await authFetch(`/.netlify/functions/admin-users?id=${encodeURIComponent(id)}`, { method: 'DELETE' }).catch(() => null);
+    const res = await authFetch(`/.netlify/functions/admin-users?id=${encodeURIComponent(id)}`, { method: 'DELETE' }).catch(() => null);
+    await toastAdminResult(res, 'User deleted.', 'Could not delete the user.');
     loadAdminUsers();
 }
 
@@ -413,18 +416,20 @@ function cancelLocationEdit() {
 }
 
 async function toggleLocationActive(id, active) {
-    await authFetch('/.netlify/functions/admin-locations', {
+    const res = await authFetch('/.netlify/functions/admin-locations', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id, active }),
     }).catch(() => null);
+    await toastAdminResult(res, active ? 'Location activated.' : 'Location deactivated.', 'Could not update the location.');
     loadAdminLocations();
     refreshMapData();
 }
 
 async function deleteLocationRow(id, label) {
     if (!window.confirm(`Delete "${label}"? This cannot be undone.`)) return;
-    await authFetch(`/.netlify/functions/admin-locations?id=${encodeURIComponent(id)}`, { method: 'DELETE' }).catch(() => null);
+    const res = await authFetch(`/.netlify/functions/admin-locations?id=${encodeURIComponent(id)}`, { method: 'DELETE' }).catch(() => null);
+    await toastAdminResult(res, 'Location deleted.', 'Could not delete the location.');
     loadAdminLocations();
     refreshMapData();
 }
@@ -543,6 +548,7 @@ async function reviewScanRow(row, action, extra) {
         status.textContent = data.message || 'That did not work. Please try again.';
         return;
     }
+    showToast(action === 'approve' ? `${row.city}, ${row.state.toUpperCase()} added to the map.` : 'Store rejected.', 'success');
     if (action === 'approve') refreshMapData();
     loadBwwScan();
 }
@@ -710,6 +716,7 @@ function setupAdminLocationsPanel() {
             }).catch(() => null);
 
         if (res?.ok) {
+            showToast(editId ? 'Location updated.' : 'Location added.', 'success');
             cancelLocationEdit();
             loadAdminLocations();
             refreshMapData();
@@ -741,6 +748,7 @@ function setupAdminPanel() {
         if (res?.ok) {
             form.reset();
             document.getElementById('adminNewRole').value = 'user';
+            showToast(`User "${username}" created.`, 'success');
             loadAdminUsers();
             return;
         }
@@ -1393,6 +1401,45 @@ function escapeHtml(value) {
 function formatMiles(miles) {
     const value = Number.isFinite(miles) ? miles : 0;
     return `${value} ${value === 1 ? 'mile' : 'miles'}`;
+}
+
+// Brief confirmation toast for admin actions (success/error/info). Auto-dismisses.
+const TOAST_ICONS = { success: 'fa-circle-check', error: 'fa-circle-exclamation', info: 'fa-circle-info' };
+function showToast(message, type = 'success', duration = 4000) {
+    const stack = document.getElementById('toastStack');
+    if (!stack) return;
+
+    const toast = document.createElement('div');
+    toast.className = `toast toast-${type}`;
+    toast.setAttribute('role', 'status');
+
+    const icon = document.createElement('i');
+    icon.className = `fas ${TOAST_ICONS[type] || TOAST_ICONS.info}`;
+    icon.setAttribute('aria-hidden', 'true');
+
+    const text = document.createElement('span');
+    text.textContent = message;
+
+    toast.append(icon, text);
+    stack.appendChild(toast);
+
+    const remove = () => {
+        toast.classList.add('is-leaving');
+        setTimeout(() => toast.remove(), 250);
+    };
+    setTimeout(remove, duration);
+    toast.addEventListener('click', remove);
+}
+
+// Toasts the outcome of an admin fetch() call; returns true on success.
+async function toastAdminResult(res, successMessage, fallbackErrorMessage) {
+    if (res?.ok) {
+        showToast(successMessage, 'success');
+        return true;
+    }
+    const body = await res?.json().catch(() => null);
+    showToast(body?.message || fallbackErrorMessage, 'error');
+    return false;
 }
 
 // Function removed - no longer needed with new icon system
@@ -2238,8 +2285,14 @@ async function geocodeBWW() {
     fillSelects();
 }
 
+function setMapLoading(isLoading) {
+    const overlay = document.getElementById('mapLoading');
+    if (overlay) overlay.hidden = !isLoading;
+}
+
 async function initializeApp() {
     setDarkMode(localStorage.getItem(THEME_KEY) !== 'light', false);
+    setMapLoading(true);
 
     try {
         const loaded = await loadLocationData();
@@ -2248,6 +2301,8 @@ async function initializeApp() {
         console.error('Failed to load location data:', e);
         lockApp('Your session expired. Please log in again.');
         return;
+    } finally {
+        setMapLoading(false);
     }
 
     addMarkers();

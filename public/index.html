@@ -161,7 +161,12 @@
 
         </aside>
 
-        <section id="map" aria-label="Interactive map"></section>
+        <section id="map" aria-label="Interactive map">
+            <div id="mapLoading" class="map-loading" aria-hidden="true">
+                <div class="map-loading-spinner"></div>
+                <p>Loading your territory map&hellip;</p>
+            </div>
+        </section>
         <button id="presentationExit" class="floating-exit" onclick="togglePresentationView()"><i class="fas fa-compress"></i> Exit Presentation</button>
 
         <div id="countyDetailPanel" class="county-detail-panel">
@@ -267,6 +272,8 @@
             </div>
         </div>
     </div>
+
+    <div id="toastStack" class="toast-stack" aria-live="polite" aria-atomic="false"></div>
 
     <script src="script.js"></script>
 </body>
