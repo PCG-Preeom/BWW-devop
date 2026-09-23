@@ -179,3 +179,4 @@ This file explains the main HTML, CSS, JavaScript, and server pieces in plain la
 - Territory Tools now replaces a location's own circle instead of drawing a second one on top: drawing a custom radius for an MP or BWW hides its default/saved circle and shows just the new size; Clear radius (or switching to another center) brings the default/saved circle back.
 - Markers now cluster at low zoom (Leaflet.markercluster, cdnjs) with a badge matching the app accent color, and un-cluster automatically at zoom 15+. Hovering a marker shows its name in a tooltip.
 - Location Tools: a text search box above "Matching locations" filters by name, ID or address as you type.
+- Territory Tools: after Draw / update radius, a small handle appears on the circle's edge. Drag it to resize live (0.1-50 mi); the Radius miles box and summary update as you drag, and the handle stays glued to the edge even if you drag past the min/max.

@@ -3168,3 +3168,20 @@ body.dark-mode .marker-cluster-large div {
     color: #05070b;
     background-color: var(--blue);
 }
+
+/* Territory Tools: drag-to-resize handle on the drawn radius circle */
+.radius-drag-handle {
+    display: block;
+    width: 16px;
+    height: 16px;
+    background: #ffffff;
+    border: 3px solid var(--blue);
+    border-radius: 50%;
+    box-shadow: 0 2px 6px rgba(15, 23, 42, 0.35);
+    cursor: grab;
+}
+
+.leaflet-marker-draggable .radius-drag-handle:active,
+.radius-drag-handle:active {
+    cursor: grabbing;
+}

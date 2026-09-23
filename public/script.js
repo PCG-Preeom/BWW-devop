@@ -1744,6 +1744,7 @@ const mpRadiusCircles = [];
 const bwwRadiusCircles = [];
 const DEFAULT_BWW_RADIUS_MILES = 5;
 let radiusCircle = null, routeLine = null;
+let radiusDragHandle = null;
 
 // Temporary radius the user drew around the selected MP (null = show the saved radius only).
 let customRadiusMiles = null;
@@ -2064,16 +2065,61 @@ function drawRadius() {
             : `<b>${p.name || p.id}</b><br>Territory radius: ${miles} miles`
     );
     map.fitBounds(radiusCircle.getBounds());
+    addRadiusDragHandle(p, miles);
 
     drawAllMPRadii();
     drawAllBWWRadii();
     updateMPSummary();
 }
 
+// A small draggable handle on the circle's edge; dragging it resizes the circle live,
+// updates the Radius miles box, and keeps the handle glued to the (clamped) edge.
+function addRadiusDragHandle(p, initialMiles) {
+    const start = destinationPoint(p.lat, p.lng, 90, initialMiles);
+    radiusDragHandle = L.marker([start.lat, start.lng], {
+        icon: L.divIcon({
+            className: '',
+            html: '<span class="radius-drag-handle" aria-hidden="true"></span>',
+            iconSize: [18, 18],
+            iconAnchor: [9, 9]
+        }),
+        draggable: true,
+        autoPan: true,
+        title: 'Drag to resize the radius',
+        zIndexOffset: 1000
+    }).addTo(map);
+
+    radiusDragHandle.on('drag', (e) => {
+        const raw = e.target.getLatLng();
+        const dist = haversine(p, raw);
+        const clamped = Math.min(MAX_CUSTOM_RADIUS, Math.max(MIN_CUSTOM_RADIUS, dist));
+        if (Math.abs(clamped - dist) > 1e-9) {
+            const bearing = bearingBetween(p, raw);
+            const snapped = destinationPoint(p.lat, p.lng, bearing, clamped);
+            e.target.setLatLng([snapped.lat, snapped.lng]);
+        }
+
+        // Round once and reuse everywhere, so the circle, the box and the summary never
+        // disagree over a floating-point fraction from the trig round-trip above.
+        const rounded = Math.round(clamped * 100) / 100;
+        radiusCircle.setRadius(rounded * 1609.344);
+        const milesInput = document.getElementById('radiusMiles');
+        if (milesInput) milesInput.value = rounded;
+
+        const isMPNow = p.type === 'MP' && Number.isFinite(p.radiusMiles);
+        customRadiusMiles = isMPNow && rounded !== p.radiusMiles ? rounded : null;
+        updateMPSummary();
+    });
+}
+
 function removeRadiusCircle() {
     if (radiusCircle) {
         map.removeLayer(radiusCircle);
         radiusCircle = null;
+    }
+    if (radiusDragHandle) {
+        map.removeLayer(radiusDragHandle);
+        radiusDragHandle = null;
     }
 }
 
@@ -2117,6 +2163,31 @@ function haversine(a, b) {
     const lat2 = b.lat * Math.PI / 180;
     const x = Math.sin(dLat / 2) ** 2 + Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLon / 2) ** 2;
     return 2 * R * Math.asin(Math.sqrt(x));
+}
+
+// Point a given distance (miles) and bearing (degrees, 0 = north) from a lat/lng.
+function destinationPoint(lat, lng, bearingDeg, miles) {
+    const R = 3958.8; // Earth's radius in miles
+    const d = miles / R;
+    const brng = bearingDeg * Math.PI / 180;
+    const lat1 = lat * Math.PI / 180;
+    const lng1 = lng * Math.PI / 180;
+    const lat2 = Math.asin(Math.sin(lat1) * Math.cos(d) + Math.cos(lat1) * Math.sin(d) * Math.cos(brng));
+    const lng2 = lng1 + Math.atan2(
+        Math.sin(brng) * Math.sin(d) * Math.cos(lat1),
+        Math.cos(d) - Math.sin(lat1) * Math.sin(lat2)
+    );
+    return { lat: lat2 * 180 / Math.PI, lng: (((lng2 * 180 / Math.PI) + 540) % 360) - 180 };
+}
+
+// Compass bearing (degrees, 0 = north) from point a to point b.
+function bearingBetween(a, b) {
+    const lat1 = a.lat * Math.PI / 180;
+    const lat2 = b.lat * Math.PI / 180;
+    const dLng = (b.lng - a.lng) * Math.PI / 180;
+    const y = Math.sin(dLng) * Math.cos(lat2);
+    const x = Math.cos(lat1) * Math.sin(lat2) - Math.sin(lat1) * Math.cos(lat2) * Math.cos(dLng);
+    return (Math.atan2(y, x) * 180 / Math.PI + 360) % 360;
 }
 
 // Function to geocode a single user address using Nominatim
