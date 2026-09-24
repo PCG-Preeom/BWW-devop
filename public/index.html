@@ -45,6 +45,29 @@
             </label>
             <div id="accessMessage" class="access-message"></div>
         </form>
+        <form class="access-panel" id="passwordChangeForm" hidden>
+            <div class="pcg-logo" aria-hidden="true">
+                <img src="unnamed.png" alt="">
+            </div>
+            <h1>Set a New Password</h1>
+            <p class="access-hint">This account needs a new password before continuing (minimum 8 characters).</p>
+            <label for="newPassword1">New password</label>
+            <div class="access-input-row access-row-1">
+                <div class="access-input-wrap">
+                    <i class="fas fa-lock access-input-icon" aria-hidden="true"></i>
+                    <input id="newPassword1" type="password" placeholder="New password" autocomplete="new-password">
+                </div>
+            </div>
+            <label for="newPassword2">Confirm new password</label>
+            <div class="access-input-row access-row-2">
+                <div class="access-input-wrap">
+                    <i class="fas fa-lock access-input-icon" aria-hidden="true"></i>
+                    <input id="newPassword2" type="password" placeholder="Confirm new password" autocomplete="new-password">
+                </div>
+                <button type="submit" aria-label="Set new password"><i class="fas fa-lock"></i></button>
+            </div>
+            <div id="passwordChangeMessage" class="access-message"></div>
+        </form>
         <footer>© 2026 People Capital Group - All rights reserved</footer>
     </section>
 
@@ -63,7 +86,7 @@
                         <button class="icon-btn" id="presentationToggle" onclick="togglePresentationView()" title="Presentation View" aria-label="Toggle presentation view"><i class="fas fa-expand"></i></button>
                         <button class="icon-btn" id="themeToggle" onclick="toggleDarkMode()" title="Toggle Dark Mode" aria-label="Toggle dark mode"><i class="fas fa-moon"></i></button>
                         </div>
-                        <div class="version-badge">v3.10</div>
+                        <div class="version-badge">v3.11</div>
                     </div>
                 </div>
                 <details class="legend-details">

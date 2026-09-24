@@ -100,7 +100,8 @@ function unlockMap() {
     if (appInitialized) return;
     appInitialized = true;
 
-    const submitBtn = document.querySelector('#accessForm button[type="submit"]');
+    const submitBtn = document.querySelector('#accessForm:not([hidden]) button[type="submit"], #passwordChangeForm:not([hidden]) button[type="submit"]')
+        || document.querySelector('#accessForm button[type="submit"]');
     const rect = submitBtn
         ? submitBtn.getBoundingClientRect()
         : { left: window.innerWidth / 2, top: window.innerHeight / 2, width: 0, height: 0 };
@@ -151,26 +152,50 @@ function logAccessAttempt(success) {
     });
 }
 
-async function forcePasswordChange(session) {
-    const message = document.getElementById('accessMessage');
-    while (true) {
-        const next = window.prompt('This account needs a new password (min 8 characters). Set one now:');
-        if (next === null) continue; // must set a password to continue
+// Shows the in-page "set a new password" panel and resolves once the
+// password has been changed and the session is ready to unlock.
+function setupPasswordChangeForm() {
+    const form = document.getElementById('passwordChangeForm');
+    const pass1 = document.getElementById('newPassword1');
+    const pass2 = document.getElementById('newPassword2');
+    const message = document.getElementById('passwordChangeMessage');
+    const submitBtn = form?.querySelector('button[type="submit"]');
+
+    form?.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        const next = pass1?.value || '';
+        const confirmValue = pass2?.value || '';
         if (next.length < 8) {
             if (message) message.textContent = 'Password must be at least 8 characters.';
-            continue;
-        }
-        const res = await fetch('/.netlify/functions/change-password', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
-            body: JSON.stringify({ new_password: next }),
-        }).catch(() => null);
-        if (res?.ok) {
-            setSession({ ...session, must_change_password: false });
             return;
         }
-        if (message) message.textContent = 'Could not set password, try again.';
-    }
+        if (next !== confirmValue) {
+            if (message) message.textContent = 'Passwords do not match.';
+            return;
+        }
+
+        if (submitBtn) submitBtn.disabled = true;
+        if (message) message.textContent = '';
+
+        const session = getSession();
+        const res = await fetch('/.netlify/functions/change-password', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token}` },
+            body: JSON.stringify({ new_password: next }),
+        }).catch(() => null);
+
+        if (res?.ok) {
+            setSession({ ...session, must_change_password: false });
+            await playUnlockAnimation(submitBtn);
+            form.hidden = true;
+            if (pass1) pass1.value = '';
+            if (pass2) pass2.value = '';
+            unlockMap();
+            return;
+        }
+        if (submitBtn) submitBtn.disabled = false;
+        if (message) message.textContent = 'Could not set that password, try again.';
+    });
 }
 
 async function authFetch(path, options = {}) {
@@ -885,6 +910,7 @@ function setupAccessPrompt() {
         if (message) message.textContent = '';
 
         let success = false;
+        let requiresPasswordChange = false;
         try {
             const res = await fetch('/.netlify/functions/login', {
                 method: 'POST',
@@ -895,7 +921,7 @@ function setupAccessPrompt() {
             if (res.ok) {
                 success = true;
                 setSession(data);
-                if (data.must_change_password) await forcePasswordChange(data);
+                requiresPasswordChange = !!data.must_change_password;
                 const adminToggle = document.getElementById('adminToggle');
                 if (adminToggle) adminToggle.hidden = getSession()?.role !== 'admin';
             }
@@ -908,6 +934,16 @@ function setupAccessPrompt() {
         if (success) {
             if (rememberCheckbox?.checked) localStorage.setItem(REMEMBERED_USERNAME_KEY, username);
             else localStorage.removeItem(REMEMBERED_USERNAME_KEY);
+
+            if (requiresPasswordChange) {
+                if (submitBtn) submitBtn.disabled = false;
+                form.hidden = true;
+                const pwForm = document.getElementById('passwordChangeForm');
+                if (pwForm) pwForm.hidden = false;
+                document.getElementById('newPassword1')?.focus();
+                return;
+            }
+
             await playUnlockAnimation(submitBtn);
             unlockMap();
             return;
@@ -2740,6 +2776,7 @@ async function refreshMapData() {
 }
 
 setupAccessPrompt();
+setupPasswordChangeForm();
 setupAdminPanel();
 
 document.getElementById('radiusCenter').addEventListener('change', updateRadiusMilesInput);

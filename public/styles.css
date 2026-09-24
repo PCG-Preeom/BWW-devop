@@ -215,6 +215,13 @@ body.auth-locked .access-input-row button {
     text-transform: uppercase;
 }
 
+.access-hint {
+    margin: 0 0 20px;
+    color: #d0a337;
+    font-size: 13px;
+    line-height: 1.5;
+}
+
 .access-panel label.access-remember {
     position: static;
     width: auto;
