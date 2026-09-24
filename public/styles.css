@@ -3362,3 +3362,162 @@ body.auth-locked .access-input-row button[type="submit"]:active {
         transform: none;
     }
 }
+
+/* Richer marker info card (replaces the plain Leaflet popup text) */
+.leaflet-popup.pcg-popup-wrap .leaflet-popup-content-wrapper {
+    border-radius: 12px;
+    box-shadow: 0 14px 32px rgba(15, 23, 42, 0.28);
+}
+
+.leaflet-popup.pcg-popup-wrap .leaflet-popup-content {
+    margin: 0;
+    min-width: 220px;
+}
+
+.pcg-popup {
+    padding: 12px 14px;
+    font-family: 'Manrope', sans-serif;
+}
+
+.pcg-popup-head {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 2px;
+    font-size: 14px;
+}
+
+.pcg-popup-head i {
+    color: var(--blue);
+}
+
+.pcg-popup-type {
+    margin-bottom: 6px;
+    color: var(--muted);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+}
+
+.pcg-popup-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 7px;
+    margin-bottom: 4px;
+    font-size: 12px;
+    line-height: 1.4;
+    color: var(--text);
+}
+
+.pcg-popup-row i {
+    margin-top: 2px;
+    width: 12px;
+    color: var(--muted);
+    font-size: 11px;
+}
+
+.pcg-popup-actions {
+    display: flex;
+    gap: 6px;
+    margin-top: 10px;
+    padding-top: 8px;
+    border-top: 1px solid var(--line);
+}
+
+.pcg-popup-actions button {
+    flex: 1 1 auto;
+    padding: 6px 8px;
+    color: var(--text);
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+    border-radius: 7px;
+    font-size: 11px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.15s ease, transform 0.1s ease;
+}
+
+.pcg-popup-actions button:hover {
+    background: var(--blue);
+    color: #ffffff;
+}
+
+.pcg-popup-actions button:active {
+    transform: scale(0.96);
+}
+
+/* Presentation Mode: auto-tour controls */
+.tour-controls {
+    position: absolute;
+    top: 16px;
+    left: 16px;
+    z-index: 1000;
+    display: none;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 10px;
+    background: rgba(21, 35, 58, 0.5);
+    border: 1px solid rgba(255, 255, 255, 0.28);
+    border-radius: 999px;
+    box-shadow: var(--shadow);
+    backdrop-filter: blur(28px);
+}
+
+body.presentation-mode .tour-controls {
+    display: inline-flex;
+}
+
+.tour-controls button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    color: #ffffff;
+    background: rgba(255, 255, 255, 0.12);
+    border: 1px solid rgba(255, 255, 255, 0.24);
+    border-radius: 50%;
+    cursor: pointer;
+    transition: background 0.15s ease;
+}
+
+.tour-controls button:hover {
+    background: rgba(255, 255, 255, 0.24);
+}
+
+.tour-status {
+    min-width: 44px;
+    padding: 0 4px;
+    color: #ffffff;
+    font-size: 12px;
+    font-weight: 700;
+    text-align: center;
+}
+
+/* Map Sketch: active tool state and sketch pin marker */
+#measureBtn.active,
+#sketchPinBtn.active {
+    color: #ffffff;
+    background: var(--blue);
+    border-color: var(--blue);
+}
+
+.map-sketch-pin {
+    display: inline-grid;
+    place-items: center;
+    width: 26px;
+    height: 26px;
+    color: #ffffff;
+    background: #7c3aed;
+    border: 2px solid #ffffff;
+    border-radius: 50% 50% 50% 0;
+    transform: rotate(-45deg);
+    box-shadow: 0 4px 10px rgba(124, 58, 237, 0.45);
+}
+
+.map-sketch-pin i {
+    transform: rotate(45deg);
+    font-size: 11px;
+}

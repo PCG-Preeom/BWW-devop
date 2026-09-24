@@ -59,10 +59,11 @@
                     <div class="brand-side">
                         <div class="brand-actions">
                         <button class="icon-btn" id="adminToggle" onclick="openAdminPanel()" title="Admin" aria-label="Open admin panel" hidden><i class="fas fa-user-shield"></i></button>
+                        <button class="icon-btn" id="shareLinkBtn" onclick="copyShareLink()" title="Copy a shareable link to this view" aria-label="Copy a shareable link to this view"><i class="fas fa-link"></i></button>
                         <button class="icon-btn" id="presentationToggle" onclick="togglePresentationView()" title="Presentation View" aria-label="Toggle presentation view"><i class="fas fa-expand"></i></button>
                         <button class="icon-btn" id="themeToggle" onclick="toggleDarkMode()" title="Toggle Dark Mode" aria-label="Toggle dark mode"><i class="fas fa-moon"></i></button>
                         </div>
-                        <div class="version-badge">v3.8</div>
+                        <div class="version-badge">v3.9</div>
                     </div>
                 </div>
                 <details class="legend-details">
@@ -84,6 +85,12 @@
                     <label class="filter-option"><input id="filterDunkin" type="checkbox" checked onchange="applyLocationFilters()"> Dunkin</label>
                 </div>
                 <div id="filterSummary" class="hint"></div>
+                <label for="mapStyleSelect">Map style</label>
+                <select id="mapStyleSelect" onchange="setMapStyle(this.value)">
+                    <option value="standard" selected>Standard (follows light/dark)</option>
+                    <option value="satellite">Satellite</option>
+                    <option value="terrain">Terrain</option>
+                </select>
             </details>
 
             <details class="row tool-card">
@@ -148,6 +155,17 @@
             </details>
 
             <details class="row tool-card">
+                <summary class="section-title"><i class="fas fa-ruler"></i><b>Map Sketch</b></summary>
+                <p class="hint">Quick, temporary tools for a live discussion &mdash; nothing here is saved.</p>
+                <div class="button-row">
+                    <button class="secondary" id="measureBtn" onclick="toggleMeasureMode()"><i class="fas fa-ruler-combined"></i> Measure distance</button>
+                    <button class="secondary" id="sketchPinBtn" onclick="toggleSketchPinMode()"><i class="fas fa-thumbtack"></i> Add sketch pin</button>
+                </div>
+                <div id="measureResult" class="result">Pick a tool above, then click the map.</div>
+                <button class="secondary" onclick="clearSketches()"><i class="fas fa-xmark"></i> Clear sketches</button>
+            </details>
+
+            <details class="row tool-card">
                 <summary class="section-title"><i class="fas fa-map-pin"></i><b>Pin Location</b></summary>
                 <label>Address</label>
                 <input id="pinnedAddress" type="text" placeholder="Enter address...">
@@ -182,6 +200,12 @@
             </div>
         </section>
         <button id="presentationExit" class="floating-exit" onclick="togglePresentationView()"><i class="fas fa-compress"></i> Exit Presentation</button>
+        <div id="tourControls" class="tour-controls">
+            <button type="button" onclick="tourPrev()" title="Previous location" aria-label="Previous location"><i class="fas fa-backward-step"></i></button>
+            <button type="button" id="tourPlayBtn" onclick="toggleTourPlay()" title="Play tour" aria-label="Play tour"><i class="fas fa-play"></i></button>
+            <button type="button" onclick="tourNext()" title="Next location" aria-label="Next location"><i class="fas fa-forward-step"></i></button>
+            <span id="tourStatus" class="tour-status"></span>
+        </div>
 
         <div id="countyDetailPanel" class="county-detail-panel">
             <div class="cdp-header">

@@ -1005,7 +1005,26 @@ const darkTiles = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.pn
     className: 'dark-tiles',
     attribution: '&copy; OpenStreetMap contributors'
 });
+const satelliteTiles = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+    maxZoom: 19,
+    attribution: 'Tiles &copy; Esri &mdash; Source: Esri, Maxar, Earthstar Geographics'
+});
+const terrainTiles = L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
+    maxZoom: 17,
+    attribution: 'Map data: &copy; OpenStreetMap contributors, SRTM | Map style: &copy; OpenTopoMap (CC-BY-SA)'
+});
+// 'standard' follows the light/dark toggle as before; 'satellite'/'terrain' override it until switched back.
+let mapStyle = 'standard';
 let activeTiles = lightTiles.addTo(map);
+
+function setMapStyle(style) {
+    mapStyle = style;
+    if (activeTiles) map.removeLayer(activeTiles);
+    if (style === 'satellite') activeTiles = satelliteTiles;
+    else if (style === 'terrain') activeTiles = terrainTiles;
+    else activeTiles = document.body.classList.contains('dark-mode') ? darkTiles : lightTiles;
+    activeTiles.addTo(map);
+}
 map.createPane('countyPane');
 map.getPane('countyPane').style.zIndex = 330;
 
@@ -1557,16 +1576,136 @@ async function toastAdminResult(res, successMessage, fallbackErrorMessage) {
     return false;
 }
 
+async function copyToClipboard(text, successMessage) {
+    try {
+        await navigator.clipboard.writeText(text);
+        showToast(successMessage, 'success');
+    } catch {
+        window.prompt('Copy this:', text);
+    }
+}
+
+// Builds a URL that reproduces the current (or a given) view: center/zoom, brand filters,
+// and the currently-drawn radius circle if any. Opening the link redraws all of it.
+function buildShareUrl(viewOverride) {
+    const center = viewOverride ? { lat: viewOverride.lat, lng: viewOverride.lng } : map.getCenter();
+    const zoom = viewOverride?.zoom ?? map.getZoom();
+    const params = new URLSearchParams();
+    params.set('lat', center.lat.toFixed(5));
+    params.set('lng', center.lng.toFixed(5));
+    params.set('zoom', zoom);
+    params.set('mp', BRAND_FILTERS.MP ? '1' : '0');
+    params.set('bww', BRAND_FILTERS.BWW ? '1' : '0');
+    params.set('dunkin', BRAND_FILTERS.Dunkin ? '1' : '0');
+
+    if (!viewOverride && radiusCircle) {
+        const c = radiusCircle.getLatLng();
+        params.set('rlat', c.lat.toFixed(5));
+        params.set('rlng', c.lng.toFixed(5));
+        params.set('rmiles', (radiusCircle.getRadius() / 1609.344).toFixed(2));
+        const rp = getSelectedRadiusCenter();
+        if (rp) params.set('rname', rp.name || rp.id);
+    }
+
+    const url = new URL(window.location.href);
+    url.search = params.toString();
+    return url.toString();
+}
+
+function copyShareLink(viewOverride) {
+    copyToClipboard(buildShareUrl(viewOverride), 'Share link copied to clipboard.');
+}
+
+// Applies lat/lng/zoom/filters/radius from the URL (from a link made by copyShareLink), if present.
+function applySharedViewFromUrl() {
+    const params = new URLSearchParams(window.location.search);
+    if (!params.has('lat') || !params.has('lng')) return;
+
+    const lat = parseFloat(params.get('lat'));
+    const lng = parseFloat(params.get('lng'));
+    const zoom = parseFloat(params.get('zoom'));
+    if (Number.isFinite(lat) && Number.isFinite(lng) && Number.isFinite(zoom)) {
+        map.setView([lat, lng], zoom);
+    }
+
+    if (params.has('mp')) { const el = document.getElementById('filterMP'); if (el) el.checked = params.get('mp') === '1'; }
+    if (params.has('bww')) { const el = document.getElementById('filterBWW'); if (el) el.checked = params.get('bww') === '1'; }
+    if (params.has('dunkin')) { const el = document.getElementById('filterDunkin'); if (el) el.checked = params.get('dunkin') === '1'; }
+    applyLocationFilters();
+
+    const rlat = parseFloat(params.get('rlat'));
+    const rlng = parseFloat(params.get('rlng'));
+    const rmiles = parseFloat(params.get('rmiles'));
+    if (Number.isFinite(rlat) && Number.isFinite(rlng) && Number.isFinite(rmiles)) {
+        const shared = L.circle([rlat, rlng], {
+            radius: rmiles * 1609.344,
+            color: '#7c3aed',
+            fillColor: '#a78bfa',
+            fillOpacity: 0.12,
+            weight: 2,
+            dashArray: '4 6'
+        }).addTo(map);
+        const label = params.get('rname') || 'Shared radius';
+        shared.bindPopup(`<b>${escapeHtml(label)}</b><br>Shared radius: ${rmiles} miles`).openPopup();
+    }
+}
+
 // Function removed - no longer needed with new icon system
 
 // Function to generate popup content for a location
-function popup(p) {
-    const radiusLine = p.type === 'MP' && Number.isFinite(p.radiusMiles)
-        ? `<br>${p.radiusMiles} ${p.radiusMiles === 1 ? 'mile' : 'miles'} radius`
-        : '';
-    const regionLine = p.region ? `<br>${p.region}` : '';
+// Built as real DOM nodes (not an HTML string) so location names/addresses never need to be
+// trusted as markup, and so the action buttons can carry real event handlers, not inline JS.
+function buildPopupContent(p) {
+    const wrap = document.createElement('div');
+    wrap.className = 'pcg-popup';
 
-    return `<b>${p.name || p.id}</b><br>${p.type}${radiusLine}${regionLine}<br>${p.address || ''}<br>${p.lat.toFixed(6)}, ${p.lng.toFixed(6)}`;
+    const head = document.createElement('div');
+    head.className = 'pcg-popup-head';
+    const headIcon = document.createElement('i');
+    headIcon.className = `fas ${p.type === 'MP' ? 'fa-building' : p.type.startsWith('BWW') ? 'fa-utensils' : 'fa-mug-hot'}`;
+    headIcon.setAttribute('aria-hidden', 'true');
+    const title = document.createElement('b');
+    title.textContent = p.name || p.id;
+    head.append(headIcon, title);
+
+    const typeLine = document.createElement('div');
+    typeLine.className = 'pcg-popup-type';
+    typeLine.textContent = p.type;
+
+    const row = (iconClass, text) => {
+        const r = document.createElement('div');
+        r.className = 'pcg-popup-row';
+        const i = document.createElement('i');
+        i.className = `fas ${iconClass}`;
+        i.setAttribute('aria-hidden', 'true');
+        r.append(i, document.createTextNode(text));
+        return r;
+    };
+
+    wrap.append(head, typeLine);
+    if (p.type === 'MP' && Number.isFinite(p.radiusMiles)) {
+        wrap.append(row('fa-circle-notch', `${p.radiusMiles} ${p.radiusMiles === 1 ? 'mile' : 'miles'} radius`));
+    }
+    if (p.region) wrap.append(row('fa-map', p.region));
+    if (p.address) wrap.append(row('fa-location-dot', p.address));
+    wrap.append(row('fa-crosshairs', `${p.lat.toFixed(6)}, ${p.lng.toFixed(6)}`));
+
+    const actions = document.createElement('div');
+    actions.className = 'pcg-popup-actions';
+
+    const copyBtn = document.createElement('button');
+    copyBtn.type = 'button';
+    copyBtn.innerHTML = '<i class="fas fa-copy" aria-hidden="true"></i> Copy address';
+    copyBtn.addEventListener('click', () => copyToClipboard(p.address || `${p.lat}, ${p.lng}`, 'Address copied to clipboard.'));
+
+    const shareBtn = document.createElement('button');
+    shareBtn.type = 'button';
+    shareBtn.innerHTML = '<i class="fas fa-link" aria-hidden="true"></i> Share';
+    shareBtn.addEventListener('click', () => copyShareLink({ lat: p.lat, lng: p.lng, zoom: 16 }));
+
+    actions.append(copyBtn, shareBtn);
+    wrap.append(actions);
+    return wrap;
 }
 
 // Function to add markers to the map
@@ -1580,9 +1719,10 @@ function addMarkers() {
     ALL.forEach((p, i) => {
         if (!isVisibleLocation(p)) return;
 
-        const m = L.marker([p.lat, p.lng], { icon: icon(p) }).bindPopup(popup(p), {
+        const m = L.marker([p.lat, p.lng], { icon: icon(p) }).bindPopup(buildPopupContent(p), {
             autoPan: false,
-            keepInView: false
+            keepInView: false,
+            className: 'pcg-popup-wrap'
         });
         m.bindTooltip(p.name || p.id, { direction: 'top', offset: [0, -14], className: 'map-marker-tooltip' });
         // When marker is clicked, select it for radius and route appropriately
@@ -1930,7 +2070,66 @@ function togglePresentationView() {
             : '<i class="fas fa-expand"></i>';
         button.title = enabled ? 'Exit Presentation' : 'Presentation View';
     }
+    if (!enabled) stopTour();
     setTimeout(() => map.invalidateSize(), 250);
+}
+
+// Auto-tour: steps through whatever is currently listed in Location Tools' "Matching locations"
+// (so the type radio + text search already filters what the tour visits).
+let tourTimer = null;
+let tourIndex = -1;
+let tourPlaying = false;
+const TOUR_STEP_MS = 4500;
+
+function getTourLocations() {
+    const select = document.getElementById('locationSearch');
+    if (!select) return [];
+    return [...select.options].map((o) => +o.value).filter((i) => ALL[i]);
+}
+
+function updateTourStatus(total) {
+    const status = document.getElementById('tourStatus');
+    if (status) status.textContent = total ? `${tourIndex + 1} / ${total}` : '';
+}
+
+function tourGoTo(step) {
+    const list = getTourLocations();
+    if (!list.length) {
+        updateTourStatus(0);
+        return;
+    }
+    tourIndex = ((tourIndex + step) % list.length + list.length) % list.length;
+    const index = list[tourIndex];
+    centerLocation(index, true);
+    pulseLocationMarker(index);
+    updateTourStatus(list.length);
+}
+
+function tourNext() { tourGoTo(1); }
+function tourPrev() { tourGoTo(-1); }
+
+function toggleTourPlay() {
+    const btn = document.getElementById('tourPlayBtn');
+    tourPlaying = !tourPlaying;
+    if (tourPlaying) {
+        if (btn) btn.innerHTML = '<i class="fas fa-pause"></i>';
+        tourNext();
+        tourTimer = setInterval(tourNext, TOUR_STEP_MS);
+    } else {
+        if (btn) btn.innerHTML = '<i class="fas fa-play"></i>';
+        clearInterval(tourTimer);
+        tourTimer = null;
+    }
+}
+
+function stopTour() {
+    tourPlaying = false;
+    clearInterval(tourTimer);
+    tourTimer = null;
+    tourIndex = -1;
+    const btn = document.getElementById('tourPlayBtn');
+    if (btn) btn.innerHTML = '<i class="fas fa-play"></i>';
+    updateTourStatus(0);
 }
 
 function spawnThemeFX(cx, cy, newDark) {
@@ -1983,7 +2182,10 @@ function applyDarkModeState(enabled, persist) {
     if (activeTiles) {
         map.removeLayer(activeTiles);
     }
-    activeTiles = enabled ? darkTiles : lightTiles;
+    // Satellite/terrain stay put across a theme toggle; only the standard road map swaps.
+    if (mapStyle === 'standard') {
+        activeTiles = enabled ? darkTiles : lightTiles;
+    }
     activeTiles.addTo(map);
     if (paCountyLayer) {
         paCountyLayer.setStyle(countyStyle);
@@ -2522,6 +2724,7 @@ async function initializeApp() {
     drawAllMPRadii();
     drawAllBWWRadii();
     loadPinnedAddresses();
+    applySharedViewFromUrl();
 }
 
 async function refreshMapData() {
@@ -2617,3 +2820,91 @@ function setupAddressAutocomplete(inputId, suggestionsId) {
 setupAddressAutocomplete('startAddress', 'addressSuggestions');
 setupAddressAutocomplete('closestAddress', 'closestAddressSuggestions');
 setupAddressAutocomplete('pinnedAddress', 'pinnedAddressSuggestions');
+
+// ---------- Map Sketch: free-form measuring and temporary labeled pins (not saved) ----------
+let measureMode = false;
+let sketchPinMode = false;
+let measurePoints = [];
+let measureLine = null;
+const measureMarkers = [];
+const sketchPins = [];
+
+function updateSketchButtonStates() {
+    document.getElementById('measureBtn')?.classList.toggle('active', measureMode);
+    document.getElementById('sketchPinBtn')?.classList.toggle('active', sketchPinMode);
+    const container = map.getContainer();
+    if (container) container.style.cursor = (measureMode || sketchPinMode) ? 'crosshair' : '';
+}
+
+function toggleMeasureMode() {
+    measureMode = !measureMode;
+    sketchPinMode = false;
+    if (measureMode) {
+        measurePoints = [];
+        const result = document.getElementById('measureResult');
+        if (result) result.textContent = 'Click a starting point on the map.';
+    }
+    updateSketchButtonStates();
+}
+
+function toggleSketchPinMode() {
+    sketchPinMode = !sketchPinMode;
+    measureMode = false;
+    if (sketchPinMode) {
+        const result = document.getElementById('measureResult');
+        if (result) result.textContent = 'Click the map to drop a labeled pin.';
+    }
+    updateSketchButtonStates();
+}
+
+function sketchPinIcon() {
+    return L.divIcon({
+        className: '',
+        html: '<span class="map-sketch-pin" aria-hidden="true"><i class="fas fa-thumbtack"></i></span>',
+        iconSize: [26, 26],
+        iconAnchor: [13, 26],
+        popupAnchor: [0, -24]
+    });
+}
+
+function clearSketches() {
+    measurePoints = [];
+    if (measureLine) { map.removeLayer(measureLine); measureLine = null; }
+    measureMarkers.forEach((m) => map.removeLayer(m));
+    measureMarkers.length = 0;
+    sketchPins.forEach((m) => map.removeLayer(m));
+    sketchPins.length = 0;
+    const result = document.getElementById('measureResult');
+    if (result) result.textContent = 'Pick a tool above, then click the map.';
+}
+
+function handleMapSketchClick(e) {
+    if (measureMode) {
+        measurePoints.push(e.latlng);
+        const dot = L.circleMarker(e.latlng, { radius: 5, color: '#7c3aed', fillColor: '#a78bfa', fillOpacity: 0.9, weight: 2 }).addTo(map);
+        measureMarkers.push(dot);
+        const result = document.getElementById('measureResult');
+        if (measurePoints.length === 2) {
+            if (measureLine) map.removeLayer(measureLine);
+            measureLine = L.polyline(measurePoints, { color: '#7c3aed', weight: 2, dashArray: '6 6' }).addTo(map);
+            const miles = haversine(
+                { lat: measurePoints[0].lat, lng: measurePoints[0].lng },
+                { lat: measurePoints[1].lat, lng: measurePoints[1].lng }
+            );
+            if (result) result.textContent = `Distance: ${miles.toFixed(2)} miles (${Math.round(miles * 5280)} ft).`;
+            measurePoints = [];
+        } else if (result) {
+            result.textContent = 'Click a second point to measure.';
+        }
+        return;
+    }
+    if (sketchPinMode) {
+        const label = window.prompt('Label for this sketch pin (optional):', '');
+        if (label === null) return; // cancelled
+        const pin = L.marker(e.latlng, { icon: sketchPinIcon() }).addTo(map);
+        if (label) pin.bindPopup(`<b>${escapeHtml(label)}</b>`).openPopup();
+        sketchPins.push(pin);
+    }
+}
+
+map.on('click', handleMapSketchClick);

@@ -181,3 +181,20 @@ This file explains the main HTML, CSS, JavaScript, and server pieces in plain la
 - Location Tools: a text search box above "Matching locations" filters by name, ID or address as you type.
 - Territory Tools: after Draw / update radius, a small handle appears on the circle's edge. Drag it to resize live (0.1-50 mi); the Radius miles box and summary update as you drag, and the handle stays glued to the edge even if you drag past the min/max.
 - Login screen redesign: one-time staggered entrance animation (panel, logo glow, fields), a few settling gold embers in the background, person/lock icons in each field, a password show/hide toggle, a clearer gold focus ring, a button press-scale, and a red panel pulse on a wrong password. All animation is one-time (not looping) and disabled under prefers-reduced-motion.
+
+## "God's Eye View"-inspired interactivity (v3.9)
+
+- Shareable view links: the link icon in the header copies a URL that reproduces the current
+  map center/zoom, brand filters, and any drawn radius circle. Opening that link (initializeApp
+  -> applySharedViewFromUrl) restores all of it, including a purple dashed reference circle.
+- Marker popups are now a richer card (buildPopupContent): icon header, type/radius/region/
+  address/coordinates rows, and Copy address / Share buttons. Built as real DOM nodes, not an
+  HTML string, so location data never needs to be trusted as markup.
+- Presentation Mode has an auto-tour: floating Play/Prev/Next controls step through whatever is
+  currently listed in Location Tools' "Matching locations" (so its type/text filter controls what
+  the tour visits), pausing ~4.5s per stop. Stops automatically on exiting presentation mode.
+- Map Sketch (new sidebar card): free-form "click two points" distance measuring, and temporary
+  labeled sketch pins for a live discussion. Nothing here is saved; Clear sketches wipes it.
+- Map style selector (Visible Locations card): Standard (follows light/dark as before), Satellite
+  (Esri World Imagery) or Terrain (OpenTopoMap) - both free, no API key. Switching themes while on
+  Satellite/Terrain leaves the chosen style alone.
