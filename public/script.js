@@ -1519,6 +1519,12 @@ async function loadCountyHighlights() {
                         updateCountySummary();
                     },
                     click: (event) => {
+                        // While a map-sketch tool is active, let the click through to it
+                        // instead of selecting the county underneath.
+                        if (measureMode || sketchPinMode) {
+                            handleMapSketchClick(event);
+                            return;
+                        }
                         L.DomEvent.stopPropagation(event);
                         selectedCountyId = String(feature.id);
                         const select = document.getElementById('countySelect');
