@@ -43,6 +43,28 @@ function lockApp(reason) {
     const message = document.getElementById('accessMessage');
     if (input) input.value = '';
     if (message) message.textContent = reason || '';
+
+    // Undo the green "unlocked" look left over from the last successful
+    // login — otherwise the form looks broken/frozen even though it's
+    // just sitting on a normal, ready-to-use login screen.
+    document.querySelectorAll('#accessForm button[type="submit"], #passwordChangeForm button[type="submit"]').forEach((btn) => {
+        btn.disabled = false;
+        btn.classList.remove('is-unlocked', 'is-denied');
+        btn.querySelector('i')?.classList.replace('fa-lock-open', 'fa-lock');
+    });
+
+    // If a password-change was in progress, drop back to the normal login form.
+    const pwForm = document.getElementById('passwordChangeForm');
+    if (pwForm && !pwForm.hidden) {
+        pwForm.hidden = true;
+        document.getElementById('newPassword1').value = '';
+        document.getElementById('newPassword2').value = '';
+        const pwMessage = document.getElementById('passwordChangeMessage');
+        if (pwMessage) pwMessage.textContent = '';
+    }
+    const form = document.getElementById('accessForm');
+    if (form) form.hidden = false;
+
     document.getElementById('accessUsername')?.focus();
 }
 
