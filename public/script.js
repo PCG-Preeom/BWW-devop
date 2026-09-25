@@ -818,6 +818,12 @@ function closeAdminPanel() {
     if (overlay) overlay.hidden = true;
 }
 
+// Clicking the dimmed backdrop (not the panel itself) closes the admin modal,
+// so you don't have to scroll back to the top to reach the X button.
+document.getElementById('adminOverlay')?.addEventListener('click', (event) => {
+    if (event.target === event.currentTarget) closeAdminPanel();
+});
+
 function setupAdminLocationsPanel() {
     const typeSelect = document.getElementById('adminLocType');
     const form = document.getElementById('adminLocForm');
